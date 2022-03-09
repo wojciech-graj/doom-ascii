@@ -1,6 +1,7 @@
 //
 // Copyright(C) 1993-1996 Id Software, Inc.
 // Copyright(C) 2005-2014 Simon Howard
+// Copyright(C) 2022 Wojciech Graj
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -282,13 +283,14 @@ void I_GetEvent(void)
     int pressed;
     unsigned char key;
 
-    
+	DG_ReadInput();
+
 	while (DG_GetKey(&pressed, &key))
     {
         UpdateShiftStatus(pressed, key);
 
         // process event
-        
+
         if (pressed)
         {
             // data1 has the key pressed, data2 has the character
@@ -338,4 +340,3 @@ void I_GetEvent(void)
 void I_InitInput(void)
 {
 }
-

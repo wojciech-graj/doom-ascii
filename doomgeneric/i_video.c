@@ -153,8 +153,6 @@ void cmap_to_fb(uint8_t * out, uint8_t * in, int in_pixels)
 
 void I_InitGraphics (void)
 {
-    int i;
-
 	memset(&s_Fb, 0, sizeof(struct FB_ScreenInfo));
 	s_Fb.xres = DOOMGENERIC_RESX;
 	s_Fb.yres = DOOMGENERIC_RESY;
@@ -219,7 +217,6 @@ void I_UpdateNoBlit (void)
 void I_FinishUpdate (void)
 {
     int y;
-    int x_offset, y_offset, x_offset_end;
     unsigned char *line_in, *line_out;
 
     /* DRAW SCREEN */

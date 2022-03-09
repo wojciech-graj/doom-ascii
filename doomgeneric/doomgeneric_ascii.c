@@ -17,7 +17,6 @@
 
 #include "doomkeys.h"
 #include "i_system.h"
-#include "m_argv.h"
 #include "doomgeneric.h"
 
 #include <errno.h>
@@ -25,14 +24,15 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <ctype.h>
 
 #if defined(_WIN32) || defined(WIN32)
 #define OS_WINDOWS
 #include <windows.h>
-//#include <synchapi.h>
 #else
-#define __USE_POSIX199309
-#define _POSIX_C_SOURCE 199309L
+#include <unistd.h>
+#include <termios.h>
+#include <sys/ioctl.h>
 #endif
 
 #include <time.h>
@@ -69,6 +69,8 @@ void winError(char* format)
 
 const char grad[] = " .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
 #define GRAD_LEN 70u
+#define INPUT_BUFFER_LEN 16u
+#define EVENT_BUFFER_LEN (INPUT_BUFFER_LEN * 2u - 1u)
 
 struct color_t {
     uint32_t b:8;
@@ -80,6 +82,10 @@ struct color_t {
 char *output_buffer;
 size_t output_buffer_size;
 struct timespec ts_init;
+
+char input_buffer[INPUT_BUFFER_LEN];
+uint16_t event_buffer[EVENT_BUFFER_LEN];
+uint16_t *event_buf_loc;
 
 void DG_Init()
 {
@@ -106,13 +112,12 @@ void DG_Init()
 	 output_buffer = malloc(output_buffer_size);
 
 	 clock_gettime(CLOCK_REALTIME, &ts_init);
+
+	 memset(input_buffer, '\0', INPUT_BUFFER_LEN);
 }
 
 void DG_DrawFrame()
 {
-	/* clear output buffer */
-	memset(output_buffer, '\0', output_buffer_size);  /* TODO: Optimize */
-
 	/* fill output buffer */
 	uint32_t color = 0xFFFFFF00;
 	unsigned row, col;
@@ -146,11 +151,14 @@ void DG_DrawFrame()
 
 	/* flush output buffer */
 	CALL_STDOUT(fputs(output_buffer, stdout), "DG_DrawFrame: fputs error %d");
+
+	/* clear output buffer */
+	memset(output_buffer, '\0', buf - output_buffer + 1u);
 }
 
 void DG_SleepMs(uint32_t ms)
 {
-	#ifdef TGL_OS_WINDOWS
+	#ifdef OS_WINDOWS
 		Sleep(ms);
 	#else
 		struct timespec ts = (struct timespec) {
@@ -169,9 +177,149 @@ uint32_t DG_GetTicksMs()
 	return (ts.tv_sec - ts_init.tv_sec) * 1000 + (ts.tv_nsec - ts_init.tv_nsec) / 1000000;
 }
 
+char convertToDoomKey(char **buf)
+{
+	switch (**buf) {
+	case '\012':
+		(*buf)++;
+		return KEY_ENTER;
+	case '\033':
+		(*buf)++;
+		switch (**buf) {
+		case '[':
+			(*buf)++;
+			switch (**buf) {
+			case 'A':
+				(*buf)++;
+				return KEY_UPARROW;
+			case 'B':
+				(*buf)++;
+				return KEY_DOWNARROW;
+			case 'C':
+				(*buf)++;
+				return KEY_RIGHTARROW;
+			case 'D':
+				(*buf)++;
+				return KEY_LEFTARROW;
+			}
+		default:
+			return KEY_ESCAPE;
+		}
+	case ' ':
+		(*buf)++;
+		return KEY_USE;
+	default:
+		return tolower(*((*buf)++));
+	}
+}
+
+void DG_ReadInput(void)
+{
+	static char prev_input_buffer[INPUT_BUFFER_LEN];
+	static char raw_input_buffer[INPUT_BUFFER_LEN];
+
+	memcpy(prev_input_buffer, input_buffer, INPUT_BUFFER_LEN);
+	memset(raw_input_buffer, '\0', INPUT_BUFFER_LEN);
+	memset(input_buffer, '\0', INPUT_BUFFER_LEN);
+	memset(event_buffer, '\0', 2u * EVENT_BUFFER_LEN);
+	event_buf_loc = event_buffer;
+#ifdef __unix__
+	struct termios oldt, newt;
+
+	/* Disable canonical mode */
+	CALL(tcgetattr(STDIN_FILENO, &oldt), "DG_DrawFrame: tcgetattr error %d");
+	newt = oldt;
+	newt.c_lflag &= ~(ICANON);
+	newt.c_cc[VMIN] = 0;
+	newt.c_cc[VTIME] = 0;
+	CALL(tcsetattr(STDIN_FILENO, TCSANOW, &newt), "DG_DrawFrame: tcsetattr error %d");
+
+	CALL(read(2, raw_input_buffer, INPUT_BUFFER_LEN - 1u) < 0, "DG_DrawFrame: read error %d");
+
+	CALL(tcsetattr(STDIN_FILENO, TCSANOW, &oldt), "DG_DrawFrame: tcsetattr error %d");
+
+	/* Flush input buffer to prevent read of previous unread input */
+	CALL(tcflush(STDIN_FILENO, TCIFLUSH), "DG_DrawFrame: tcflush error %d");
+#else /* defined(OS_WINDOWS) */
+	const HANDLE hInputHandle = GetStdHandle(STD_INPUT_HANDLE);
+	WINDOWS_CALL(hInputHandle == INVALID_HANDLE_VALUE, "DG_ReadInput: %s");
+
+	/* Disable canonical mode */
+	DWORD old_mode, new_mode;
+	WINDOWS_CALL(!GetConsoleMode(hInputHandle, &old_mode), "DG_ReadInput: %s");
+	new_mode = old_mode;
+	new_mode &= ~(ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT);
+	WINDOWS_CALL(!SetConsoleMode(hInputHandle, new_mode), "DG_ReadInput: %s");
+
+	DWORD event_cnt;
+	WINDOWS_CALL(!GetNumberOfConsoleInputEvents(hInputHandle, &event_cnt), "DG_ReadInput: %s");
+
+	/* ReadConsole is blocking so must manually process events */
+	int input_count;
+	if (event_cnt) {
+		INPUT_RECORD input_records[32];
+		WINDOWS_CALL(!ReadConsoleInput(hInputHandle, input_records, 32, &event_cnt), "DG_ReadInput: %s");
+
+		DWORD i;
+		for (i = 0; i < event_cnt; i++) {
+			if (input_records[i].Event.KeyEvent.bKeyDown && input_records[i].EventType == KEY_EVENT) {
+				raw_input_buffer[input_count++] = input_records[i].Event.KeyEvent.uChar.AsciiChar;
+				if (input_count == INPUT_BUFFER_LEN - 1u)
+					break;
+			}
+		}
+	}
+
+	WINDOWS_CALL(!SetConsoleMode(hInputHandle, old_mode), "DG_ReadInput: %s");
+#endif
+	/* create input buffer */
+	char *raw_input_buf_loc = raw_input_buffer;
+	char *input_buf_loc = input_buffer;
+	while (*raw_input_buf_loc)
+		*input_buf_loc++ = convertToDoomKey(&raw_input_buf_loc);
+
+	/* contruct input array */
+	int i, j;
+	for (i = 0; input_buffer[i]; i++) {
+		/* skip duplicates */
+        for (j = i + 1; input_buffer[j]; j++) {
+            if (input_buffer[i] == input_buffer[j])
+				goto LBL_CONTINUE_1;
+        }
+
+		/* pressed events */
+		for (j = 0; prev_input_buffer[j]; j++) {
+			if (input_buffer[i] == prev_input_buffer[j])
+				goto LBL_CONTINUE_1;
+		}
+		*event_buf_loc++ = 0x0100 | input_buffer[i];
+
+		LBL_CONTINUE_1:;
+    }
+
+	/* depressed events */
+	for (i = 0; prev_input_buffer[i]; i++) {
+		for (j = 0; input_buffer[j]; j++) {
+			if (prev_input_buffer[i] == input_buffer[j])
+				goto LBL_CONTINUE_2;
+		}
+		*event_buf_loc++ = 0xFF & prev_input_buffer[i];
+
+		LBL_CONTINUE_2:;
+	}
+
+	event_buf_loc = event_buffer;
+}
+
 int DG_GetKey(int* pressed, unsigned char* doomKey)
 {
-	return 0;
+	if (!*event_buf_loc)
+		return 0;
+
+    *pressed = *event_buf_loc >> 8;
+    *doomKey = *event_buf_loc & 0xFF;
+	event_buf_loc++;
+	return 1;
 }
 
 void DG_SetWindowTitle(const char * title)
