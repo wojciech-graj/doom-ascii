@@ -54,7 +54,7 @@
 //
 typedef struct
 {
-    boolean	istexture;
+    bool	istexture;
     int		picnum;
     int		basepic;
     int		numpics;
@@ -1087,7 +1087,7 @@ void P_PlayerInSpecialSector (player_t* player)
 // P_UpdateSpecials
 // Animate planes, scroll walls, etc.
 //
-boolean		levelTimer;
+bool		levelTimer;
 int		levelTimeCount;
 
 void P_UpdateSpecials (void)

@@ -63,7 +63,7 @@ void M_MakeDirectory(char *path)
 
 // Check if a file exists
 
-boolean M_FileExists(char *filename)
+bool M_FileExists(char *filename)
 {
     FILE *fstream;
 
@@ -76,7 +76,7 @@ boolean M_FileExists(char *filename)
     }
     else
     {
-        // If we can't open because the file is a directory, the 
+        // If we can't open because the file is a directory, the
         // "file" exists at least!
 
         return errno == EISDIR;
@@ -88,13 +88,13 @@ boolean M_FileExists(char *filename)
 //
 
 long M_FileLength(FILE *handle)
-{ 
+{
     long savedpos;
     long length;
 
     // save the current position in the file
     savedpos = ftell(handle);
-    
+
     // jump to the end and find the length
     fseek(handle, 0, SEEK_END);
     length = ftell(handle);
@@ -109,11 +109,11 @@ long M_FileLength(FILE *handle)
 // M_WriteFile
 //
 
-boolean M_WriteFile(char *name, void *source, int length)
+bool M_WriteFile(char *name, void *source, int length)
 {
     FILE *handle;
     int	count;
-	
+
     handle = fopen(name, "wb");
 
     if (handle == NULL)
@@ -121,10 +121,10 @@ boolean M_WriteFile(char *name, void *source, int length)
 
     count = fwrite(source, 1, length, handle);
     fclose(handle);
-	
+
     if (count < length)
 	return false;
-		
+
     return true;
 }
 
@@ -138,7 +138,7 @@ int M_ReadFile(char *name, byte **buffer)
     FILE *handle;
     int	count, length;
     byte *buf;
-	
+
     handle = fopen(name, "rb");
     if (handle == NULL)
 	I_Error ("Couldn't read file %s", name);
@@ -147,14 +147,14 @@ int M_ReadFile(char *name, byte **buffer)
     // reading the current position
 
     length = M_FileLength(handle);
-    
+
     buf = Z_Malloc (length, PU_STATIC, NULL);
     count = fread(buf, 1, length, handle);
     fclose (handle);
-	
+
     if (count < length)
 	I_Error ("Couldn't read file %s", name);
-		
+
     *buffer = buf;
     return length;
 }
@@ -187,7 +187,7 @@ char *M_TempFile(char *s)
     return M_StringJoin(tempdir, DIR_SEPARATOR_S, s, NULL);
 }
 
-boolean M_StrToInt(const char *str, int *result)
+bool M_StrToInt(const char *str, int *result)
 {
     return sscanf(str, " 0x%x", result) == 1
         || sscanf(str, " 0X%x", result) == 1
@@ -275,7 +275,7 @@ char *M_StrCaseStr(char *haystack, char *needle)
 
     for (i = 0; i <= len; ++i)
     {
-        if (!strncasecmp(haystack + i, needle, needle_len))
+        if (!STRNCASECMP(haystack + i, needle, needle_len))
         {
             return haystack + i;
         }
@@ -370,7 +370,7 @@ char *M_StringReplace(const char *haystack, const char *needle,
 // Safe string copy function that works like OpenBSD's strlcpy().
 // Returns true if the string was not truncated.
 
-boolean M_StringCopy(char *dest, const char *src, size_t dest_size)
+bool M_StringCopy(char *dest, const char *src, size_t dest_size)
 {
     size_t len;
 
@@ -391,7 +391,7 @@ boolean M_StringCopy(char *dest, const char *src, size_t dest_size)
 // Safe string concat function that works like OpenBSD's strlcat().
 // Returns true if string not truncated.
 
-boolean M_StringConcat(char *dest, const char *src, size_t dest_size)
+bool M_StringConcat(char *dest, const char *src, size_t dest_size)
 {
     size_t offset;
 
@@ -406,7 +406,7 @@ boolean M_StringConcat(char *dest, const char *src, size_t dest_size)
 
 // Returns true if 's' begins with the specified prefix.
 
-boolean M_StringStartsWith(const char *s, const char *prefix)
+bool M_StringStartsWith(const char *s, const char *prefix)
 {
     return strlen(s) > strlen(prefix)
         && strncmp(s, prefix, strlen(prefix)) == 0;
@@ -414,7 +414,7 @@ boolean M_StringStartsWith(const char *s, const char *prefix)
 
 // Returns true if 's' ends with the specified suffix.
 
-boolean M_StringEndsWith(const char *s, const char *suffix)
+bool M_StringEndsWith(const char *s, const char *suffix)
 {
     return strlen(s) >= strlen(suffix)
         && strcmp(s + strlen(s) - strlen(suffix), suffix) == 0;
@@ -533,4 +533,3 @@ char *M_OEMToUTF8(const char *oem)
 }
 
 #endif
-

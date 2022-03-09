@@ -645,7 +645,7 @@ void R_InitLightTables (void)
 //  because it might be in the middle of a refresh.
 // The change will take effect next refresh.
 //
-boolean		setsizeneeded;
+bool		setsizeneeded;
 int		setblocks;
 int		setdetail;
 

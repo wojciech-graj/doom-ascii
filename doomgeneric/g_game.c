@@ -96,7 +96,7 @@ gamestate_t     oldgamestate;
 gameaction_t    gameaction; 
 gamestate_t     gamestate; 
 skill_t         gameskill; 
-boolean		respawnmonsters;
+bool		respawnmonsters;
 int             gameepisode; 
 int             gamemap; 
 
@@ -104,23 +104,23 @@ int             gamemap;
 
 int             timelimit;
 
-boolean         paused; 
-boolean         sendpause;             	// send a pause event next tic 
-boolean         sendsave;             	// send a save event next tic 
-boolean         usergame;               // ok to save / end game 
+bool         paused; 
+bool         sendpause;             	// send a pause event next tic 
+bool         sendsave;             	// send a save event next tic 
+bool         usergame;               // ok to save / end game 
  
-boolean         timingdemo;             // if true, exit with report on completion 
-boolean         nodrawers;              // for comparative timing purposes 
+bool         timingdemo;             // if true, exit with report on completion 
+bool         nodrawers;              // for comparative timing purposes 
 int             starttime;          	// for comparative timing purposes  	 
  
-boolean         viewactive; 
+bool         viewactive; 
  
 int             deathmatch;           	// only if started as net death 
-boolean         netgame;                // only true if packets are broadcast 
-boolean         playeringame[MAXPLAYERS]; 
+bool         netgame;                // only true if packets are broadcast 
+bool         playeringame[MAXPLAYERS]; 
 player_t        players[MAXPLAYERS]; 
 
-boolean         turbodetected[MAXPLAYERS];
+bool         turbodetected[MAXPLAYERS];
  
 int             consoleplayer;          // player taking events and displaying 
 int             displayplayer;          // view being displayed 
@@ -128,19 +128,19 @@ int             levelstarttic;          // gametic at level start
 int             totalkills, totalitems, totalsecret;    // for intermission 
  
 char           *demoname;
-boolean         demorecording; 
-boolean         longtics;               // cph's doom 1.91 longtics hack
-boolean         lowres_turn;            // low resolution turning for longtics
-boolean         demoplayback; 
-boolean		netdemo; 
+bool         demorecording; 
+bool         longtics;               // cph's doom 1.91 longtics hack
+bool         lowres_turn;            // low resolution turning for longtics
+bool         demoplayback; 
+bool		netdemo; 
 byte*		demobuffer;
 byte*		demo_p;
 byte*		demoend; 
-boolean         singledemo;            	// quit after playing a demo from cmdline 
+bool         singledemo;            	// quit after playing a demo from cmdline 
  
-boolean         precache = true;        // if true, load all graphics at start 
+bool         precache = true;        // if true, load all graphics at start 
 
-boolean         testcontrols = false;    // Invoked by setup to test controls
+bool         testcontrols = false;    // Invoked by setup to test controls
 int             testcontrols_mousespeed;
  
 
@@ -195,29 +195,29 @@ static const struct
 #define NUMKEYS		256 
 #define MAX_JOY_BUTTONS 20
 
-static boolean  gamekeydown[NUMKEYS]; 
+static bool  gamekeydown[NUMKEYS]; 
 static int      turnheld;		// for accelerative turning 
  
-static boolean  mousearray[MAX_MOUSE_BUTTONS + 1];
-static boolean *mousebuttons = &mousearray[1];  // allow [-1]
+static bool  mousearray[MAX_MOUSE_BUTTONS + 1];
+static bool *mousebuttons = &mousearray[1];  // allow [-1]
 
 // mouse values are used once 
 int             mousex;
 int             mousey;         
 
 static int      dclicktime;
-static boolean  dclickstate;
+static bool  dclickstate;
 static int      dclicks; 
 static int      dclicktime2;
-static boolean  dclickstate2;
+static bool  dclickstate2;
 static int      dclicks2;
 
 // joystick values are repeated 
 static int      joyxmove;
 static int      joyymove;
 static int      joystrafemove;
-static boolean  joyarray[MAX_JOY_BUTTONS + 1]; 
-static boolean *joybuttons = &joyarray[1];		// allow [-1] 
+static bool  joyarray[MAX_JOY_BUTTONS + 1]; 
+static bool *joybuttons = &joyarray[1];		// allow [-1] 
  
 static int      savegameslot; 
 static char     savedescription[32]; 
@@ -241,7 +241,7 @@ int G_CmdChecksum (ticcmd_t* cmd)
     return sum; 
 } 
 
-static boolean WeaponSelectable(weapontype_t weapon)
+static bool WeaponSelectable(weapontype_t weapon)
 {
     // Can't select the super shotgun in Doom 1.
 
@@ -322,8 +322,8 @@ static int G_NextWeapon(int direction)
 void G_BuildTiccmd (ticcmd_t* cmd, int maketic) 
 { 
     int		i; 
-    boolean	strafe;
-    boolean	bstrafe; 
+    bool	strafe;
+    bool	bstrafe; 
     int		speed;
     int		tspeed; 
     int		forward;
@@ -730,7 +730,7 @@ static void SetMouseButtons(unsigned int buttons_mask)
 // G_Responder  
 // Get info needed to make ticcmd_ts for the players.
 // 
-boolean G_Responder (event_t* ev) 
+bool G_Responder (event_t* ev) 
 { 
     // allow spy mode changes even during the demo
     if (gamestate == GS_LEVEL && ev->type == ev_keydown 
@@ -1112,7 +1112,7 @@ void G_PlayerReborn (int player)
 //
 void P_SpawnPlayer (mapthing_t* mthing); 
  
-boolean
+bool
 G_CheckSpot
 ( int		playernum,
   mapthing_t*	mthing ) 
@@ -1322,7 +1322,7 @@ int cpars[32] =
 //
 // G_DoCompleted 
 //
-boolean		secretexit; 
+bool		secretexit; 
 extern char*	pagename; 
  
 void G_ExitLevel (void) 
@@ -1531,7 +1531,7 @@ void G_DoWorldDone (void)
 // G_InitFromSavegame
 // Can be called by the startup code or the menu task. 
 //
-extern boolean setsizeneeded;
+extern bool setsizeneeded;
 void R_ExecuteSetViewSize (void);
 
 char	savename[256];
@@ -2245,7 +2245,7 @@ void G_TimeDemo (char* name)
 =================== 
 */ 
  
-boolean G_CheckDemoStatus (void) 
+bool G_CheckDemoStatus (void) 
 { 
     int             endtime; 
 	 

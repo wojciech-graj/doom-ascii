@@ -39,7 +39,7 @@
 typedef struct
 {
     // Should be "IWAD" or "PWAD".
-    char		identification[4];		
+    char		identification[4];
     int			numlumps;
     int			infotableofs;
 } PACKEDATTR wadinfo_t;
@@ -58,7 +58,7 @@ typedef struct
 
 // Location of each lump on disk.
 
-lumpinfo_t *lumpinfo;		
+lumpinfo_t *lumpinfo;
 unsigned int numlumps = 0;
 
 // Hash table for fast lookups
@@ -179,7 +179,7 @@ wad_file_t *W_AddFile (char *filename)
 		M_ExtractFileBase (filename, fileinfo->name);
 		newnumlumps++;
     }
-    else 
+    else
     {
     	// WAD file
         W_Read(wad_file, 0, &header, sizeof(header));
@@ -263,28 +263,28 @@ int W_CheckNumForName (char* name)
     if (lumphash != NULL)
     {
         int hash;
-        
+
         // We do! Excellent.
 
         hash = W_LumpNameHash(name) % numlumps;
-        
+
         for (lump_p = lumphash[hash]; lump_p != NULL; lump_p = lump_p->next)
         {
-            if (!strncasecmp(lump_p->name, name, 8))
+            if (!STRNCASECMP(lump_p->name, name, 8))
             {
                 return lump_p - lumpinfo;
             }
         }
-    } 
+    }
     else
     {
         // We don't have a hash table generate yet. Linear search :-(
-        // 
+        //
         // scan backwards so patch lump files take precedence
 
         for (i=numlumps-1; i >= 0; --i)
         {
-            if (!strncasecmp(lumpinfo[i].name, name, 8))
+            if (!STRNCASECMP(lumpinfo[i].name, name, 8))
             {
                 return i;
             }
@@ -313,7 +313,7 @@ int W_GetNumForName (char* name)
     {
         I_Error ("W_GetNumForName: %s not found!", name);
     }
- 
+
     return i;
 }
 
@@ -343,22 +343,22 @@ void W_ReadLump(unsigned int lump, void *dest)
 {
     int c;
     lumpinfo_t *l;
-	
+
     if (lump >= numlumps)
     {
 	I_Error ("W_ReadLump: %i >= numlumps", lump);
     }
 
     l = lumpinfo+lump;
-	
+
     I_BeginRead ();
-	
+
     c = W_Read(l->wad_file, l->position, dest, l->size);
 
     if (c < l->size)
     {
 	I_Error ("W_ReadLump: only read %i of %i on lump %i",
-		 c, l->size, lump);	
+		 c, l->size, lump);
     }
 
     I_EndRead ();
@@ -374,7 +374,7 @@ void W_ReadLump(unsigned int lump, void *dest)
 // the lump data.
 //
 // 'tag' is the type of zone memory buffer to allocate for the lump
-// (usually PU_STATIC or PU_CACHE).  If the lump is loaded as 
+// (usually PU_STATIC or PU_CACHE).  If the lump is loaded as
 // PU_STATIC, it should be released back using W_ReleaseLumpNum
 // when no longer needed (do not use Z_ChangeTag).
 //
@@ -417,7 +417,7 @@ void *W_CacheLumpNum(int lumpnum, int tag)
 	W_ReadLump (lumpnum, lump->cache);
         result = lump->cache;
     }
-	
+
     return result;
 }
 
@@ -431,12 +431,12 @@ void *W_CacheLumpName(char *name, int tag)
     return W_CacheLumpNum(W_GetNumForName(name), tag);
 }
 
-// 
-// Release a lump back to the cache, so that it can be reused later 
+//
+// Release a lump back to the cache, so that it can be reused later
 // without having to read from disk again, or alternatively, discarded
 // if we run out of memory.
 //
-// Back in Vanilla Doom, this was just done using Z_ChangeTag 
+// Back in Vanilla Doom, this was just done using Z_ChangeTag
 // directly, but now that we have WAD mmap, things are a bit more
 // complicated ...
 //
@@ -484,10 +484,10 @@ void W_Profile (void)
     FILE*	f;
     int		j;
     char	name[9];
-	
-	
+
+
     for (i=0 ; i<numlumps ; i++)
-    {	
+    {
 	ptr = lumpinfo[i].cache;
 	if (!ptr)
 	{
@@ -609,4 +609,3 @@ void W_CheckCorrectIWAD(GameMission_t mission)
         }
     }
 }
-

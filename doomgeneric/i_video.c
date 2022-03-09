@@ -39,7 +39,6 @@ rcsid[] = "$Id: i_x.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
 
 #include "doomgeneric.h"
 
-#include <stdbool.h>
 #include <stdlib.h>
 
 #include <fcntl.h>
@@ -93,12 +92,12 @@ byte *I_VideoBuffer = NULL;
 
 // If true, game is running as a screensaver
 
-boolean screensaver_mode = false;
+bool screensaver_mode = false;
 
 // Flag indicating whether the screen is currently visible:
 // when the screen isnt visible, don't render the screen
 
-boolean screenvisible;
+bool screenvisible;
 
 // Mouse acceleration
 //
@@ -346,7 +345,7 @@ void I_BindVideoVariables (void)
 {
 }
 
-void I_DisplayFPSDots (boolean dots_on)
+void I_DisplayFPSDots (bool dots_on)
 {
 }
 

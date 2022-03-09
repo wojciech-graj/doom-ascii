@@ -33,11 +33,12 @@
 #include <unistd.h>
 #include <termios.h>
 #include <sys/ioctl.h>
+#include <time.h>
 #endif
 
-#include <time.h>
-
 #ifdef OS_WINDOWS
+#define CLK 0
+
 #define WINDOWS_CALL(cond_, format_) do {if (UNLIKELY(cond_)) winError(format_);} while (0)
 
 void winError(char* format)
@@ -55,6 +56,19 @@ void winError(char* format)
 	);
 	I_Error(format, lpMsgBuf);
 }
+
+/* Modified from https://stackoverflow.com/a/31335254 */
+struct timespec { long tv_sec; long tv_nsec; };
+int clock_gettime(int p, struct timespec *spec)
+{  (void)p; __int64 wintime; GetSystemTimeAsFileTime((FILETIME*)&wintime);
+   wintime      -=116444736000000000ll;
+   spec->tv_sec  =wintime / 10000000ll;
+   spec->tv_nsec =wintime % 10000000ll *100;
+   return 0;
+}
+
+#else
+#define CLK CLOCK_REALTIME
 #endif
 
 #define UNLIKELY(x_) __builtin_expect((x_),0)
@@ -111,7 +125,7 @@ void DG_Init()
 	 output_buffer_size = 21u * DOOMGENERIC_RESX * DOOMGENERIC_RESY + DOOMGENERIC_RESY + 4u;
 	 output_buffer = malloc(output_buffer_size);
 
-	 clock_gettime(CLOCK_REALTIME, &ts_init);
+	 clock_gettime(CLK, &ts_init);
 
 	 memset(input_buffer, '\0', INPUT_BUFFER_LEN);
 }
@@ -172,7 +186,7 @@ void DG_SleepMs(uint32_t ms)
 uint32_t DG_GetTicksMs()
 {
 	struct timespec ts;
-	clock_gettime(CLOCK_REALTIME, &ts);
+	clock_gettime(CLK, &ts);
 
 	return (ts.tv_sec - ts_init.tv_sec) * 1000 + (ts.tv_nsec - ts_init.tv_nsec) / 1000000;
 }
@@ -255,7 +269,7 @@ void DG_ReadInput(void)
 	WINDOWS_CALL(!GetNumberOfConsoleInputEvents(hInputHandle, &event_cnt), "DG_ReadInput: %s");
 
 	/* ReadConsole is blocking so must manually process events */
-	int input_count;
+	int input_count = 0;
 	if (event_cnt) {
 		INPUT_RECORD input_records[32];
 		WINDOWS_CALL(!ReadConsoleInput(hInputHandle, input_records, 32, &event_cnt), "DG_ReadInput: %s");
@@ -278,7 +292,7 @@ void DG_ReadInput(void)
 	while (*raw_input_buf_loc)
 		*input_buf_loc++ = convertToDoomKey(&raw_input_buf_loc);
 
-	/* contruct input array */
+	/* construct event array */
 	int i, j;
 	for (i = 0; input_buffer[i]; i++) {
 		/* skip duplicates */
@@ -322,7 +336,7 @@ int DG_GetKey(int* pressed, unsigned char* doomKey)
 	return 1;
 }
 
-void DG_SetWindowTitle(const char * title)
+void DG_SetWindowTitle(const char *title)
 {
 	(void)title;
 }

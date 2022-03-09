@@ -27,9 +27,9 @@
 // Parse the command line, merging WAD files that are sppecified.
 // Returns true if at least one file was added.
 
-boolean W_ParseCommandLine(void)
+bool W_ParseCommandLine(void)
 {
-    boolean modifiedgame = false;
+    bool modifiedgame = false;
     int p;
 
 #ifdef FEATURE_WAD_MERGE

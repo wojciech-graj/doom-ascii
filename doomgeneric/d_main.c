@@ -94,33 +94,33 @@ char *          savegamedir;
 char *          iwadfile;
 
 
-boolean		devparm;	// started game with -devparm
-boolean         nomonsters;	// checkparm of -nomonsters
-boolean         respawnparm;	// checkparm of -respawn
-boolean         fastparm;	// checkparm of -fast
+bool		devparm;	// started game with -devparm
+bool         nomonsters;	// checkparm of -nomonsters
+bool         respawnparm;	// checkparm of -respawn
+bool         fastparm;	// checkparm of -fast
 
 //extern int soundVolume;
 //extern  int	sfxVolume;
 //extern  int	musicVolume;
 
-extern  boolean	inhelpscreens;
+extern  bool	inhelpscreens;
 
 skill_t		startskill;
 int             startepisode;
 int		startmap;
-boolean		autostart;
+bool		autostart;
 int             startloadgame;
 
-boolean		advancedemo;
+bool		advancedemo;
 
 // Store demo, do not accept any inputs
-boolean         storedemo;
+bool         storedemo;
 
 // "BFG Edition" version of doom2.wad does not include TITLEPIC.
-boolean         bfgedition;
+bool         bfgedition;
 
 // If true, the main game loop has started.
-boolean         main_loop_started = false;
+bool         main_loop_started = false;
 
 char		wadfile[1024];		// primary wad file
 char		mapdir[1024];           // directory of development maps
@@ -139,11 +139,11 @@ void D_CheckNetGame(void);
 void D_ProcessEvents (void)
 {
     event_t*	ev;
-	
+
     // IF STORE DEMO, DO NOT ACCEPT INPUT
     if (storedemo)
         return;
-	
+
     while ((ev = D_PopEvent()) != NULL)
     {
 	if (M_Responder (ev))
@@ -162,31 +162,31 @@ void D_ProcessEvents (void)
 
 // wipegamestate can be set to -1 to force a wipe on the next draw
 gamestate_t     wipegamestate = GS_DEMOSCREEN;
-extern  boolean setsizeneeded;
+extern  bool setsizeneeded;
 extern  int             showMessages;
 void R_ExecuteSetViewSize (void);
 
 void D_Display (void)
 {
-    static  boolean		viewactivestate = false;
-    static  boolean		menuactivestate = false;
-    static  boolean		inhelpscreensstate = false;
-    static  boolean		fullscreen = false;
+    static  bool		viewactivestate = false;
+    static  bool		menuactivestate = false;
+    static  bool		inhelpscreensstate = false;
+    static  bool		fullscreen = false;
     static  gamestate_t		oldgamestate = -1;
     static  int			borderdrawcount;
     int				nowtime;
     int				tics;
     int				wipestart;
     int				y;
-    boolean			done;
-    boolean			wipe;
-    boolean			redrawsbar;
+    bool			done;
+    bool			wipe;
+    bool			redrawsbar;
 
     if (nodrawers)
     	return;                    // for comparative timing / profiling
-		
+
     redrawsbar = false;
-    
+
     // change the view size if needed
     if (setsizeneeded)
     {
@@ -206,7 +206,7 @@ void D_Display (void)
 
     if (gamestate == GS_LEVEL && gametic)
     	HU_Erase();
-    
+
     // do buffered drawing
     switch (gamestate)
     {
@@ -235,17 +235,17 @@ void D_Display (void)
 		D_PageDrawer ();
 		break;
     }
-    
+
     // draw buffered stuff to screen
     I_UpdateNoBlit ();
-    
+
     // draw the view directly
     if (gamestate == GS_LEVEL && !automapactive && gametic)
     	R_RenderPlayerView (&players[displayplayer]);
 
     if (gamestate == GS_LEVEL && gametic)
     	HU_Drawer ();
-    
+
     // clean up border stuff
     if (gamestate != oldgamestate && gamestate != GS_LEVEL)
     	I_SetPalette (W_CacheLumpName (DEH_String("PLAYPAL"),PU_CACHE));
@@ -280,7 +280,7 @@ void D_Display (void)
     viewactivestate = viewactive;
     inhelpscreensstate = inhelpscreens;
     oldgamestate = wipegamestate = gamestate;
-    
+
     // draw pause pic
     if (paused)
     {
@@ -304,7 +304,7 @@ void D_Display (void)
 	I_FinishUpdate ();              // page flip or blit buffer
 	return;
     }
-    
+
     // wipe update
     wipe_EndScreen(0, 0, SCREENWIDTH, SCREENHEIGHT);
 
@@ -318,7 +318,7 @@ void D_Display (void)
 	    tics = nowtime - wipestart;
             I_Sleep(1);
 	} while (tics <= 0);
-        
+
 	wipestart = nowtime;
 	done = wipe_ScreenWipe(wipe_Melt
 			       , 0, 0, SCREENWIDTH, SCREENHEIGHT, tics);
@@ -385,15 +385,15 @@ void D_BindVariables(void)
 // Called to determine whether to grab the mouse pointer
 //
 
-boolean D_GrabMouseCallback(void)
+bool D_GrabMouseCallback(void)
 {
     // Drone players don't need mouse focus
 
     if (drone)
         return false;
 
-    // when menu is active or game is paused, release the mouse 
- 
+    // when menu is active or game is paused, release the mouse
+
     if (menuactive || paused)
         return false;
 
@@ -522,7 +522,7 @@ void D_DoAdvanceDemo (void)
       demosequence = (demosequence+1)%7;
     else
       demosequence = (demosequence+1)%6;
-    
+
     switch (demosequence)
     {
       case 0:
@@ -636,19 +636,19 @@ static char *banners[] =
 //
 // Get game name: if the startup banner has been replaced, use that.
 // Otherwise, use the name given
-// 
+//
 
 static char *GetGameName(char *gamename)
 {
     size_t i;
     char *deh_sub;
-    
+
     for (i=0; i<arrlen(banners); ++i)
     {
         // Has the banner been replaced?
 
         deh_sub = DEH_String(banners[i]);
-        
+
         if (deh_sub != banners[i])
         {
             size_t gamename_size;
@@ -719,10 +719,10 @@ static void SetMissionForPackName(char *pack_name)
 
 void D_IdentifyVersion(void)
 {
-    // gamemission is set up by the D_FindIWAD function.  But if 
-    // we specify '-iwad', we have to identify using 
+    // gamemission is set up by the D_FindIWAD function.  But if
+    // we specify '-iwad', we have to identify using
     // IdentifyIWADByName.  However, if the iwad does not match
-    // any known IWAD name, we may have a dilemma.  Try to 
+    // any known IWAD name, we may have a dilemma.  Try to
     // identify by its contents.
 
     if (gamemission == none)
@@ -731,12 +731,12 @@ void D_IdentifyVersion(void)
 
         for (i=0; i<numlumps; ++i)
         {
-            if (!strncasecmp(lumpinfo[i].name, "MAP01", 8))
+            if (!STRNCASECMP(lumpinfo[i].name, "MAP01", 8))
             {
                 gamemission = doom2;
                 break;
-            } 
-            else if (!strncasecmp(lumpinfo[i].name, "E1M1", 8))
+            }
+            else if (!STRNCASECMP(lumpinfo[i].name, "E1M1", 8))
             {
                 gamemission = doom;
                 break;
@@ -762,7 +762,7 @@ void D_IdentifyVersion(void)
             // Ultimate Doom
 
             gamemode = retail;
-        } 
+        }
         else if (W_CheckNumForName("E3M1") > 0)
         {
             gamemode = registered;
@@ -802,7 +802,7 @@ void D_IdentifyVersion(void)
 
 void D_SetGameDescription(void)
 {
-    boolean is_freedoom = W_CheckNumForName("FREEDOOM") >= 0,
+    bool is_freedoom = W_CheckNumForName("FREEDOOM") >= 0,
             is_freedm = W_CheckNumForName("FREEDM") >= 0;
 
     gamedescription = "Unknown";
@@ -851,7 +851,7 @@ void D_SetGameDescription(void)
         }
         else if (logical_gamemission == pack_plut)
         {
-            gamedescription = GetGameName("DOOM 2: Plutonia Experiment"); 
+            gamedescription = GetGameName("DOOM 2: Plutonia Experiment");
         }
         else if (logical_gamemission == pack_tnt)
         {
@@ -863,7 +863,7 @@ void D_SetGameDescription(void)
 //      print title for every printed line
 char            title[128];
 
-static boolean D_AddFile(char *filename)
+static bool D_AddFile(char *filename)
 {
     wad_file_t *handle;
 
@@ -874,7 +874,7 @@ static boolean D_AddFile(char *filename)
 }
 
 // Copyright message banners
-// Some dehacked mods replace these.  These are only displayed if they are 
+// Some dehacked mods replace these.  These are only displayed if they are
 // replaced by dehacked.
 
 static char *copyright_banners[] =
@@ -923,7 +923,7 @@ void PrintDehackedBanners(void)
     }
 }
 
-static struct 
+static struct
 {
     char *description;
     char *cmdline;
@@ -948,7 +948,7 @@ static void InitGameVersion(void)
     int p;
     int i;
 
-    //! 
+    //!
     // @arg <version>
     // @category compat
     //
@@ -968,8 +968,8 @@ static void InitGameVersion(void)
                 break;
             }
         }
-        
-        if (gameversions[i].description == NULL) 
+
+        if (gameversions[i].description == NULL)
         {
             printf("Supported game versions:\n");
 
@@ -978,7 +978,7 @@ static void InitGameVersion(void)
                 printf("\t%s (%s)\n", gameversions[i].cmdline,
                         gameversions[i].description);
             }
-            
+
             I_Error("Unknown game version '%s'", myargv[p+1]);
         }
     }
@@ -1028,7 +1028,7 @@ static void InitGameVersion(void)
             }
         }
     }
-    
+
     // The original exe does not support retail - 4th episode not supported
 
     if (gameversion < exe_ultimate && gamemode == retail)
@@ -1240,7 +1240,7 @@ void D_DoomMain (void)
     //
     // Disable monsters.
     //
-	
+
     nomonsters = M_CheckParm ("-nomonsters");
 
     //!
@@ -1259,7 +1259,7 @@ void D_DoomMain (void)
 
     fastparm = M_CheckParm ("-fast");
 
-    //! 
+    //!
     // @vanilla
     //
     // Developer mode.  F1 saves a screenshot in the current working
@@ -1293,7 +1293,7 @@ void D_DoomMain (void)
 
     if (devparm)
 	DEH_printf(D_DEVSTR);
-    
+
     // find which dir to use for config files
 
 #ifdef _WIN32
@@ -1333,7 +1333,7 @@ void D_DoomMain (void)
 	int     scale = 200;
 	extern int forwardmove[2];
 	extern int sidemove[2];
-	
+
 	if (p<myargc-1)
 	    scale = atoi (myargv[p+1]);
 	if (scale < 10)
@@ -1346,7 +1346,7 @@ void D_DoomMain (void)
 	sidemove[0] = sidemove[0]*scale/100;
 	sidemove[1] = sidemove[1]*scale/100;
     }
-    
+
     // init subsystems
     DEH_printf("V_Init: allocate screens.\n");
     V_Init ();
@@ -1568,13 +1568,13 @@ void D_DoomMain (void)
 	    "dphoof","bfgga0","heada1","cybra1","spida1d1"
 	};
 	int i;
-	
+
 	if ( gamemode == shareware)
 	    I_Error(DEH_String("\nYou cannot -file with the shareware "
 			       "version. Register!"));
 
 	// Check for fake IWAD with right name,
-	// but w/o all the lumps of the registered version. 
+	// but w/o all the lumps of the registered version.
 	if (gamemode == registered)
 	    for (i = 0;i < 23; i++)
 		if (W_CheckNumForName(name[i])<0)
@@ -1657,10 +1657,10 @@ void D_DoomMain (void)
 	startmap = 1;
 	autostart = true;
     }
-	
+
     timelimit = 0;
 
-    //! 
+    //!
     // @arg <n>
     // @category net
     // @vanilla
@@ -1744,7 +1744,7 @@ void D_DoomMain (void)
     //
 
     p = M_CheckParmWithArgs("-loadgame", 1);
-    
+
     if (p)
     {
         startloadgame = atoi(myargv[p+1]);
@@ -1838,4 +1838,3 @@ void D_DoomMain (void)
 
     D_DoomLoop ();  // never returns
 }
-

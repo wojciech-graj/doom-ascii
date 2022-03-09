@@ -28,7 +28,7 @@ GameVersion_t   gameversion = exe_final2;
 char *gamedescription;
 
 // Set if homebrew PWAD stuff has been added.
-boolean	modifiedgame;
+bool	modifiedgame;
 
 
 

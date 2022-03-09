@@ -1,4 +1,6 @@
 build/
+.savegame/
 /doomgeneric/doomgeneric
+doomgeneric.exe
 doomgeneric.map
 *.WAD

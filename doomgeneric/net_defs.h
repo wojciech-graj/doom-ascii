@@ -61,11 +61,11 @@ struct _net_module_s
 {
     // Initialize this module for use as a client
 
-    boolean (*InitClient)(void);
+    bool (*InitClient)(void);
 
     // Initialize this module for use as a server
 
-    boolean (*InitServer)(void);
+    bool (*InitServer)(void);
 
     // Send a packet
 
@@ -75,7 +75,7 @@ struct _net_module_s
     //
     // Returns true if packet received
 
-    boolean (*RecvPacket)(net_addr_t **addr, net_packet_t **packet);
+    bool (*RecvPacket)(net_addr_t **addr, net_packet_t **packet);
 
     // Converts an address to a string
 
@@ -211,7 +211,7 @@ typedef struct
 {
     signed int latency;
     unsigned int seq;
-    boolean playeringame[NET_MAXPLAYERS];
+    bool playeringame[NET_MAXPLAYERS];
     net_ticdiff_t cmds[NET_MAXPLAYERS];
 } net_full_ticcmd_t;
 

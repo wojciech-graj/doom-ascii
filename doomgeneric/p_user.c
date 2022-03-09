@@ -41,7 +41,7 @@
 // 16 pixels of bob
 #define MAXBOB	0x100000	
 
-boolean		onground;
+bool		onground;
 
 
 //

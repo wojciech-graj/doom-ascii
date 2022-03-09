@@ -149,7 +149,7 @@ void P_BringUpWeapon (player_t* player)
 // Returns true if there is enough ammo to shoot.
 // If not, selects the next weapon to use.
 //
-boolean P_CheckAmmo (player_t* player)
+bool P_CheckAmmo (player_t* player)
 {
     ammotype_t		ammo;
     int			count;
@@ -634,7 +634,7 @@ void P_BulletSlope (mobj_t*	mo)
 void
 P_GunShot
 ( mobj_t*	mo,
-  boolean	accurate )
+  bool	accurate )
 {
     angle_t	angle;
     int		damage;

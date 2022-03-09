@@ -24,9 +24,9 @@
  *  public data                                                        *
  *---------------------------------------------------------------------*/
 
-boolean net_client_connected = false;
+bool net_client_connected = false;
 
-boolean drone = false;
+bool drone = false;
 
 /*---------------------------------------------------------------------*
  *  private data                                                       *
