@@ -1,0 +1,4 @@
+build/
+/doomgeneric/doomgeneric
+doomgeneric.map
+*.WAD

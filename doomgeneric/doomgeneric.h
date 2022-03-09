@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#define DOOMGENERIC_RESX 640
-#define DOOMGENERIC_RESY 400
+extern unsigned DOOMGENERIC_RESX;
+extern unsigned DOOMGENERIC_RESY;
 
 
 extern uint32_t* DG_ScreenBuffer;
