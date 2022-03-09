@@ -70,13 +70,13 @@
 #undef PACKAGE_BUGREPORT
 
 /* Define to the full name of this package. */
-#define PACKAGE_NAME "Doom Generic"
+#define PACKAGE_NAME "Doom ASCII"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "Doom Generic 0.1"
+#define PACKAGE_STRING "Doom ASCII 0.1.0"
 
 /* Define to the one symbol short name of this package. */
-#define PACKAGE_TARNAME "doomgeneric.tar"
+#define PACKAGE_TARNAME "doom_ascii.tar"
 
 /* Define to the home page for this package. */
 #define PACKAGE_URL ""
@@ -85,13 +85,13 @@
 #define PACKAGE_VERSION 0.1
 
 /* Change this when you create your awesome forked version */
-#define PROGRAM_PREFIX "doomgeneric"
+#define PROGRAM_PREFIX "doom_ascii"
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
 
 /* Version number of package */
-#define VERSION 0.1
+#define VERSION 0.1.0
 
 /* Define to 1 if you want to compile the unmodified code */
 #undef ORIGCODE
