@@ -1,41 +1,71 @@
-# doomgeneric
-The purpose of doomgeneric is to make porting Doom easier.
-Of course Doom is already portable but with doomgeneric it is possible with just a few functions.
-The limitation is there is no sound!
+# DOOM-ASCII
 
-To try it you will need a WAD file (game data). If you don't own the game, shareware version is freely available (doom1.wad).
+![LOGO](screenshots/logo.png)
 
-# porting
-Create a file named doomgeneric_yourplatform.c and just implement these functions to suit your platform.
-* DG_Init
-* DG_DrawFrame
-* DG_SleepMs
-* DG_GetTicksMs
-* DG_GetKey
+**Text-based DOOM in your terminal!**
 
-|Functions            |Description|
-|---------------------|-----------|
-|DG_Init              |Initialize your platfrom (create window, framebuffer, etc...).
-|DG_DrawFrame         |Frame is ready in DG_ScreenBuffer. Copy it to your platform's screen.
-|DG_SleepMs           |Sleep in milliseconds.
-|DG_GetTicksMs        |The ticks passed since launch in milliseconds.
-|DG_GetKey            |Provide keyboard events.
-|DG_SetWindowTitle    |Not required. This is for setting the window title as Doom sets this from WAD file.
+Source-port of [doomgeneric](https://github.com/ozkl/doomgeneric). Does not have sound.
 
-# platforms
-I have ported to Windows, X11, and Soso. Just look at (doomgeneric_win.c or doomgeneric_xlib.c).
+You will need a WAD file (game data). If you don't own the game, the shareware version is freely available (e.g. [here](http://www.doomworld.com/3ddownloads/ports/shareware_doom_iwad.zip)).
 
-Note that X11 port is not efficient since it generates pixmap by XDrawPoint. It can be further improved by using X11 extensions.
+## Build
 
-## SDL
+Binaries for Windows and Linux are provided as github releases.
 
-![SDL](screenshots/sdl.png)
+### Linux
+Creates ```doom_ascii/doom_ascii```
+```
+cd src
+make
+```
 
-## Windows
-![Windows](screenshots/windows.png)
+### Windows
+Compile on linux. Creates ```doom_ascii/doom_ascii.exe```
+```
+cd src
+make windows
+```
 
-## X11 - Ubuntu
-![Ubuntu](screenshots/ubuntu.png)
+## Controls
 
-## X11 - FreeBSD
-![FreeBSD](screenshots/freebsd.png)
+Default keybindings are listed below.
+
+|Action         |Default Keybind|
+|---------------|---------------|
+|UP             |ARROW UP		|
+|DOWN			|ARROW DOWN		|
+|LEFT			|ARROW LEFT		|
+|RIGHT			|ARROW RIGHT	|
+|STRAFE LEFT	|,				|
+|STRAFE RIGHT	|.				|
+|FIRE			|SPACE			|
+|USE			|E				|
+|SPEED			|]				|
+|WEAPON SELECT  |1-7            |
+
+Keybinds can be remapped in ```.default.cfg```
+
+## Performance
+
+### Display
+
+Most terminals aren't designed for massive throughput, so the game cannot be played at full 320x200 resolution and the display should be scaled to minimize the strobing effect.
+
+Pass the command-line argument ```-scaling n``` to determine the level of scaling. Smaller numbers denote a larger display.
+
+Below you can find a table of recommended scales, based on subjective observations.
+
+|Terminal      |No Strobing|Some Strobing|
+|--------------|-----------|-------------|
+|Alacritty     |3          |2            |
+|Yakuake       |4          |2            |
+|Konsole       |4          |3            |
+|Xfce4-terminal|5          |3            |
+|Windows CMD   |-          |4 (severe)   |
+
+By default, a scale of 4 is used.
+
+### Input
+The following terminal input options are not mandatory but may improve input handling.
+- Disable character repeat delay to prevent delayed repeated inputs.
+- Increase polling rate to ensure input on every frame.
