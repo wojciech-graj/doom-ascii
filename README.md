@@ -6,7 +6,7 @@
 
 Source-port of [doomgeneric](https://github.com/ozkl/doomgeneric). Does not have sound.
 
-You will need a WAD file (game data). If you don't own the game, the shareware version is freely available (e.g. [here](http://www.doomworld.com/3ddownloads/ports/shareware_doom_iwad.zip)).
+You will need a WAD file (game data). If you don't own the game, the shareware version is freely available.
 
 ## Build
 
@@ -49,21 +49,11 @@ Keybinds can be remapped in ```.default.cfg```
 
 ### Display
 
-Most terminals aren't designed for massive throughput, so the game cannot be played at full 320x200 resolution and the display should be scaled to minimize the strobing effect.
+Most terminals aren't designed for massive throughput, so the game cannot be played at full 320x200 resolution at high frames per second.
 
 Pass the command-line argument ```-scaling n``` to determine the level of scaling. Smaller numbers denote a larger display.
 
-Below you can find a table of recommended scales, based on subjective observations.
-
-|Terminal      |No Strobing|Some Strobing|
-|--------------|-----------|-------------|
-|Alacritty     |3          |2            |
-|Yakuake       |4          |2            |
-|Konsole       |4          |3            |
-|Xfce4-terminal|5          |3            |
-|Windows CMD   |-          |4 (severe)   |
-
-By default, a scale of 4 is used.
+A scale of 4 is used by default, and should work flawlessly on all terminals. Most terminals (excluding Windows CMD) should manage with scales up to and including 2.
 
 ### Input
 The following terminal input options are not mandatory but may improve input handling.

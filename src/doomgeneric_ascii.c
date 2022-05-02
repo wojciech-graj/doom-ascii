@@ -160,8 +160,8 @@ void DG_DrawFrame()
 	*buf++ = '0';
 	*buf = 'm';
 
-	/* clear screen and set bold text*/
-	fputs("\033[1;1H\033[2J\033[1m", stdout);
+	/* move cursor to top left corner and set bold text*/
+	fputs("\033[;H\033[1m", stdout);
 
 	/* flush output buffer */
 	CALL_STDOUT(fputs(output_buffer, stdout), "DG_DrawFrame: fputs error %d");
