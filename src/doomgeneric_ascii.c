@@ -132,6 +132,13 @@ void DG_Init()
 
 void DG_DrawFrame()
 {
+	/* Clear screen if first frame */
+	static bool first_frame = true;
+	if (first_frame) {
+		first_frame = false;
+		fputs("\033[1;1H\033[2J", stdout);
+	}
+
 	/* fill output buffer */
 	uint32_t color = 0xFFFFFF00;
 	unsigned row, col;
