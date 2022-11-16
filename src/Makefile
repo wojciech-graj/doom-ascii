@@ -24,8 +24,13 @@ CFLAGS+=-DNORMALUNIX -DLINUX
 OUTPUT=$(BINDIR)/doom_ascii
 endif
 
+ifeq ($(MAKECMDGOALS),mac)
+LDFLAGS+=-Wl,-dead_strip,-map,$(OUTPUT).map
+else
+LDFLAGS+=-Wl,--gc-sections,-Map,$(OUTPUT).map
+endif
+
 CFLAGS+=-Os -g
-LDFLAGS+=-Wl,--gc-sections
 CFLAGS+=-Wall -D_DEFAULT_SOURCE #-DSNDSERV -DUSEASM
 LIBS+=-lm
 
@@ -37,6 +42,8 @@ all:	 $(OUTPUT)
 
 windows: $(OUTPUT)
 
+mac: $(OUTPUT)
+
 clean:
 	rm -rf $(OBJDIR)
 	rm -f $(OUTPUT)
@@ -46,7 +53,7 @@ clean:
 $(OUTPUT):	$(OBJS) | $(BINDIR)
 	@echo [Linking $@]
 	$(VB)$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) \
-	-o $(OUTPUT) $(LIBS) -Wl,-Map,$(OUTPUT).map
+	-o $(OUTPUT) $(LIBS)
 	@echo [Size]
 	-$(CROSS_COMPILE)size $(OUTPUT)
 
