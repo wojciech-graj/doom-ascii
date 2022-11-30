@@ -244,7 +244,7 @@ void DG_ReadInput(void)
 	memset(input_buffer, '\0', INPUT_BUFFER_LEN);
 	memset(event_buffer, '\0', 2u * EVENT_BUFFER_LEN);
 	event_buf_loc = event_buffer;
-#ifdef __unix__
+#if defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))
 	struct termios oldt, newt;
 
 	/* Disable canonical mode */
