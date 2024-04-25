@@ -9,11 +9,10 @@ Source-port of [doomgeneric](https://github.com/ozkl/doomgeneric). Does not have
 You will need a WAD file (game data). If you don't own the game, the shareware version is freely available.
 
 ## Build
-
 Binaries for Windows and Linux are provided as github releases.
 
-### Linux
-Creates ```doom_ascii/doom_ascii```
+### Linux / Mac
+Requires Make and a C compiler. Creates ```doom_ascii/doom_ascii```
 ```
 cd src
 make
@@ -23,11 +22,10 @@ make
 Compile on linux. Creates ```doom_ascii/doom_ascii.exe```
 ```
 cd src
-make windows
+make windows-cross
 ```
 
 ## Controls
-
 Default keybindings are listed below.
 
 |Action         |Default Keybind|
@@ -43,12 +41,10 @@ Default keybindings are listed below.
 |SPEED			|]				|
 |WEAPON SELECT  |1-7            |
 
-Keybinds can be remapped in ```.default.cfg```
+Keybinds can be remapped in ```.default.cfg```, which should be placed in the same directory as the game executable.
 
-## Performance
-
+## Performance tips
 ### Display
-
 Most terminals aren't designed for massive throughput, so the game cannot be played at full 320x200 resolution at high frames per second.
 
 Pass the command-line argument ```-scaling n``` to determine the level of scaling. Smaller numbers denote a larger display.
@@ -56,6 +52,11 @@ Pass the command-line argument ```-scaling n``` to determine the level of scalin
 A scale of 4 is used by default, and should work flawlessly on all terminals. Most terminals (excluding Windows CMD) should manage with scales up to and including 2.
 
 ### Input
-The following terminal input options are not mandatory but may improve input handling.
-- Disable character repeat delay to prevent delayed repeated inputs.
-- Increase polling rate to ensure input on every frame.
+For a better playing experience, increase the keyboard repeat rate, and reduce the keyboard repeat delay.
+
+## Troubleshooting
+### Colours are displayed incorrectly
+If the displayed image looks something like [this](https://github.com/wojciech-graj/doom-ascii/issues/8), you are likely using a terminal that does not support 24 bit RGB. See [this](https://gist.github.com/sindresorhus/bed863fb8bedf023b833c88c322e44f9) for more details, troubleshooting information, and a list of supported terminals.
+
+### Running make throws an error
+Run `make --version` and `cc --version` to verify that you have Make and a C compiler installed. If you do, and you're still getting an error, file a github issue.

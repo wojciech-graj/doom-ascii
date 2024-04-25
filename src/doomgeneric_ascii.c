@@ -228,7 +228,7 @@ char convertToDoomKey(char **buf)
 		}
 	case ' ':
 		(*buf)++;
-		return KEY_USE;
+		return KEY_FIRE;
 	default:
 		return tolower(*((*buf)++));
 	}
