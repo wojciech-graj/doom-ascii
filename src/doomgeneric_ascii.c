@@ -15,33 +15,37 @@
 //     terminal-specific code
 //
 
+#include "doomgeneric.h"
 #include "doomkeys.h"
 #include "i_system.h"
-#include "doomgeneric.h"
 
+#include <ctype.h>
 #include <errno.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <string.h>
-#include <ctype.h>
 
 #if defined(_WIN32) || defined(WIN32)
 #define OS_WINDOWS
 #include <windows.h>
 #else
-#include <unistd.h>
-#include <termios.h>
 #include <sys/ioctl.h>
+#include <termios.h>
 #include <time.h>
+#include <unistd.h>
 #endif
 
 #ifdef OS_WINDOWS
 #define CLK 0
 
-#define WINDOWS_CALL(cond_, format_) do {if (UNLIKELY(cond_)) winError(format_);} while (0)
+#define WINDOWS_CALL(cond_, format_)       \
+	do {                               \
+		if (UNLIKELY(cond_))       \
+			winError(format_); \
+	} while (0)
 
-void winError(char* format)
+void winError(char *format)
 {
 	LPVOID lpMsgBuf;
 	DWORD dw = GetLastError();
@@ -51,35 +55,45 @@ void winError(char* format)
 		NULL,
 		dw,
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		(LPTSTR) &lpMsgBuf,
-		0, NULL
-	);
+		(LPTSTR)&lpMsgBuf,
+		0, NULL);
 	I_Error(format, lpMsgBuf);
 }
 
 /* Modified from https://stackoverflow.com/a/31335254 */
-struct timespec { long tv_sec; long tv_nsec; };
+struct timespec {
+	long tv_sec;
+	long tv_nsec;
+};
 int clock_gettime(int p, struct timespec *spec)
-{  (void)p; __int64 wintime; GetSystemTimeAsFileTime((FILETIME*)&wintime);
-   wintime      -=116444736000000000ll;
-   spec->tv_sec  =wintime / 10000000ll;
-   spec->tv_nsec =wintime % 10000000ll *100;
-   return 0;
+{
+	(void)p;
+	__int64 wintime;
+	GetSystemTimeAsFileTime((FILETIME *)&wintime);
+	wintime -= 116444736000000000ll;
+	spec->tv_sec = wintime / 10000000ll;
+	spec->tv_nsec = wintime % 10000000ll * 100;
+	return 0;
 }
 
 #else
 #define CLK CLOCK_REALTIME
 #endif
 
-#define UNLIKELY(x_) __builtin_expect((x_),0)
-#define CALL(stmt_, format_) do {if (UNLIKELY(stmt_)) I_Error(format_, errno);} while (0)
+#define UNLIKELY(x_) __builtin_expect((x_), 0)
+#define CALL(stmt_, format_)                     \
+	do {                                     \
+		if (UNLIKELY(stmt_))             \
+			I_Error(format_, errno); \
+	} while (0)
 #define CALL_STDOUT(stmt_, format_) CALL((stmt_) == EOF, format_)
 
-#define BYTE_TO_TEXT(buf_, byte_) do {\
-	*(buf_)++ = '0' + (byte_) / 100u;\
-	*(buf_)++ = '0' + (byte_) / 10u % 10u;\
-	*(buf_)++ = '0' + (byte_) % 10u;\
-} while (0)
+#define BYTE_TO_TEXT(buf_, byte_)                      \
+	do {                                           \
+		*(buf_)++ = '0' + (byte_) / 100u;      \
+		*(buf_)++ = '0' + (byte_) / 10u % 10u; \
+		*(buf_)++ = '0' + (byte_) % 10u;       \
+	} while (0)
 
 const char grad[] = " .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
 #define GRAD_LEN 70u
@@ -87,10 +101,10 @@ const char grad[] = " .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbk
 #define EVENT_BUFFER_LEN (INPUT_BUFFER_LEN * 2u - 1u)
 
 struct color_t {
-    uint32_t b:8;
-    uint32_t g:8;
-    uint32_t r:8;
-    uint32_t a:8;
+	uint32_t b : 8;
+	uint32_t g : 8;
+	uint32_t r : 8;
+	uint32_t a : 8;
 };
 
 char *output_buffer;
@@ -122,12 +136,12 @@ void DG_Init()
 	 * 1 Newline character per line
 	 * SGR clear code: \033[0m (length 4)
 	 */
-	 output_buffer_size = 21u * DOOMGENERIC_RESX * DOOMGENERIC_RESY + DOOMGENERIC_RESY + 4u;
-	 output_buffer = malloc(output_buffer_size);
+	output_buffer_size = 21u * DOOMGENERIC_RESX * DOOMGENERIC_RESY + DOOMGENERIC_RESY + 4u;
+	output_buffer = malloc(output_buffer_size);
 
-	 clock_gettime(CLK, &ts_init);
+	clock_gettime(CLK, &ts_init);
 
-	 memset(input_buffer, '\0', INPUT_BUFFER_LEN);
+	memset(input_buffer, '\0', INPUT_BUFFER_LEN);
 }
 
 void DG_DrawFrame()
@@ -147,23 +161,31 @@ void DG_DrawFrame()
 
 	for (row = 0; row < DOOMGENERIC_RESY; row++) {
 		for (col = 0; col < DOOMGENERIC_RESX; col++) {
-			if ((color ^ *(uint32_t*)pixel) & 0x00FFFFFF) {
-				*buf++ = '\033'; *buf++ = '[';
-				*buf++ = '3'; *buf++ = '8';
-				*buf++ = ';'; *buf++ = '2';
-				*buf++ = ';'; BYTE_TO_TEXT(buf, pixel->r);
-				*buf++ = ';'; BYTE_TO_TEXT(buf, pixel->g);
-				*buf++ = ';'; BYTE_TO_TEXT(buf, pixel->b);
+			if ((color ^ *(uint32_t *)pixel) & 0x00FFFFFF) {
+				*buf++ = '\033';
+				*buf++ = '[';
+				*buf++ = '3';
+				*buf++ = '8';
+				*buf++ = ';';
+				*buf++ = '2';
+				*buf++ = ';';
+				BYTE_TO_TEXT(buf, pixel->r);
+				*buf++ = ';';
+				BYTE_TO_TEXT(buf, pixel->g);
+				*buf++ = ';';
+				BYTE_TO_TEXT(buf, pixel->b);
 				*buf++ = 'm';
-				color = *(uint32_t*)pixel;
+				color = *(uint32_t *)pixel;
 			}
 			char v_char = grad[(pixel->r + pixel->g + pixel->b) * GRAD_LEN / 766u];
-			*buf++ = v_char; *buf++ = v_char;
+			*buf++ = v_char;
+			*buf++ = v_char;
 			pixel++;
 		}
 		*buf++ = '\n';
 	}
-	*buf++ = '\033'; *buf++ = '[';
+	*buf++ = '\033';
+	*buf++ = '[';
 	*buf++ = '0';
 	*buf = 'm';
 
@@ -179,15 +201,15 @@ void DG_DrawFrame()
 
 void DG_SleepMs(uint32_t ms)
 {
-	#ifdef OS_WINDOWS
-		Sleep(ms);
-	#else
-		struct timespec ts = (struct timespec) {
-			.tv_sec = ms / 1000,
-			.tv_nsec = (ms % 1000ul) * 1000000,
-		};
-		nanosleep(&ts, NULL);
-	#endif
+#ifdef OS_WINDOWS
+	Sleep(ms);
+#else
+	struct timespec ts = (struct timespec){
+		.tv_sec = ms / 1000,
+		.tv_nsec = (ms % 1000ul) * 1000000,
+	};
+	nanosleep(&ts, NULL);
+#endif
 }
 
 uint32_t DG_GetTicksMs()
@@ -303,10 +325,10 @@ void DG_ReadInput(void)
 	int i, j;
 	for (i = 0; input_buffer[i]; i++) {
 		/* skip duplicates */
-        for (j = i + 1; input_buffer[j]; j++) {
-            if (input_buffer[i] == input_buffer[j])
+		for (j = i + 1; input_buffer[j]; j++) {
+			if (input_buffer[i] == input_buffer[j])
 				goto LBL_CONTINUE_1;
-        }
+		}
 
 		/* pressed events */
 		for (j = 0; prev_input_buffer[j]; j++) {
@@ -315,8 +337,8 @@ void DG_ReadInput(void)
 		}
 		*event_buf_loc++ = 0x0100 | input_buffer[i];
 
-		LBL_CONTINUE_1:;
-    }
+	LBL_CONTINUE_1:;
+	}
 
 	/* depressed events */
 	for (i = 0; prev_input_buffer[i]; i++) {
@@ -326,19 +348,19 @@ void DG_ReadInput(void)
 		}
 		*event_buf_loc++ = 0xFF & prev_input_buffer[i];
 
-		LBL_CONTINUE_2:;
+	LBL_CONTINUE_2:;
 	}
 
 	event_buf_loc = event_buffer;
 }
 
-int DG_GetKey(int* pressed, unsigned char* doomKey)
+int DG_GetKey(int *pressed, unsigned char *doomKey)
 {
 	if (!*event_buf_loc)
 		return 0;
 
-    *pressed = *event_buf_loc >> 8;
-    *doomKey = *event_buf_loc & 0xFF;
+	*pressed = *event_buf_loc >> 8;
+	*doomKey = *event_buf_loc & 0xFF;
 	event_buf_loc++;
 	return 1;
 }
