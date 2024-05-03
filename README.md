@@ -8,6 +8,11 @@ Source-port of [doomgeneric](https://github.com/ozkl/doomgeneric). Does not have
 
 You will need a WAD file (game data). If you don't own the game, the shareware version is freely available.
 
+**Try it out over telnet!**
+```
+telnet 158.101.200.139 666
+```
+
 ## Build
 Binaries for Windows and Linux are provided as github releases.
 
