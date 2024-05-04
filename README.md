@@ -10,7 +10,7 @@ You will need a WAD file (game data). If you don't own the game, the shareware v
 
 **Try it out over telnet!**
 ```
-telnet 158.101.200.139 666
+telnet doom.w-graj.net 666
 ```
 
 ## Build
