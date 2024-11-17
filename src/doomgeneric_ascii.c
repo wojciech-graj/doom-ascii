@@ -370,60 +370,41 @@ unsigned char convertToDoomKey(char **buf)
 				(*buf)++;
 				switch (**buf) {
 				case '5':
-					if (*(++(*buf)) == '~')
-						return KEY_F5;
-					break;
+					return (*(++(*buf)) == '~') ? KEY_F5 : '\0';
 				case '7':
-					if (*(++(*buf)) == '~')
-						return KEY_F6;
-					break;
+					return (*(++(*buf)) == '~') ? KEY_F6 : '\0';
 				case '8':
-					if (*(++(*buf)) == '~')
-						return KEY_F7;
-					break;
+					return (*(++(*buf)) == '~') ? KEY_F7 : '\0';
 				case '9':
-					if (*(++(*buf)) == '~')
-						return KEY_F8;
-					break;
+					return (*(++(*buf)) == '~') ? KEY_F8 : '\0';
+				default:
+					return '\0';
 				}
-				break;
 			case '2':
 				(*buf)++;
 				switch (**buf) {
 				case '0':
-					if (*(++(*buf)) == '~')
-						return KEY_F9;
-					break;
+					return (*(++(*buf)) == '~') ? KEY_F9 : '\0';
 				case '1':
-					if (*(++(*buf)) == '~')
-						return KEY_F10;
-					break;
+					return (*(++(*buf)) == '~') ? KEY_F10 : '\0';
 				case '3':
-					if (*(++(*buf)) == '~')
-						return KEY_F11;
-					break;
+					return (*(++(*buf)) == '~') ? KEY_F11 : '\0';
 				case '4':
-					if (*(++(*buf)) == '~')
-						return KEY_F12;
-					break;
+					return (*(++(*buf)) == '~') ? KEY_F12 : '\0';
 				case '~':
 					return KEY_INS;
+				default:
+					return '\0';
 				}
-				break;
 			case '3':
-				if (*(++(*buf)) == '~')
-					return KEY_DEL;
-				break;
+				return (*(++(*buf)) == '~') ? KEY_DEL : '\0';
 			case '5':
-				if (*(++(*buf)) == '~')
-					return KEY_PGUP;
-				break;
+				return (*(++(*buf)) == '~') ? KEY_PGUP : '\0';
 			case '6':
-				if (*(++(*buf)) == '~')
-					return KEY_PGDN;
-				break;
+				return (*(++(*buf)) == '~') ? KEY_PGDN : '\0';
+			default:
+				return '\0';
 			}
-			break;
 		case 'O':
 			(*buf)++;
 			switch (**buf) {
@@ -435,9 +416,11 @@ unsigned char convertToDoomKey(char **buf)
 				return KEY_F3;
 			case 'S':
 				return KEY_F4;
+			default:
+				return '\0';
 			}
-			break;
 		default:
+			(*buf)--;
 			return KEY_ESCAPE;
 		}
 	case ' ':
@@ -445,7 +428,6 @@ unsigned char convertToDoomKey(char **buf)
 	default:
 		return tolower(**buf);
 	}
-	return '\0';
 }
 #endif
 
@@ -516,7 +498,10 @@ void DG_ReadInput(void)
 	char *raw_input_buf_loc = raw_input_buffer;
 	unsigned char *input_buf_loc = input_buffer;
 	while (*raw_input_buf_loc) {
-		*input_buf_loc++ = convertToDoomKey(&raw_input_buf_loc);
+		unsigned char inp = convertToDoomKey(&raw_input_buf_loc);
+		if (!inp)
+			break;
+		*input_buf_loc++ = inp;
 		raw_input_buf_loc++;
 	}
 #endif
