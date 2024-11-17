@@ -28,6 +28,7 @@
 
 #if defined(_WIN32) || defined(WIN32)
 #define OS_WINDOWS
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #else
 #include <sys/ioctl.h>
@@ -111,9 +112,29 @@ char *output_buffer;
 size_t output_buffer_size;
 struct timespec ts_init;
 
-char input_buffer[INPUT_BUFFER_LEN];
+unsigned char input_buffer[INPUT_BUFFER_LEN];
 uint16_t event_buffer[EVENT_BUFFER_LEN];
 uint16_t *event_buf_loc;
+
+void DG_AtExit(void)
+{
+#ifdef OS_WINDOWS
+	DWORD mode;
+	const HANDLE hInputHandle = GetStdHandle(STD_INPUT_HANDLE);
+	if (UNLIKELY(hInputHandle == INVALID_HANDLE_VALUE))
+		return;
+	if (UNLIKELY(!GetConsoleMode(hInputHandle, &mode)))
+		return;
+	mode |= ENABLE_ECHO_INPUT;
+	SetConsoleMode(hInputHandle, mode);
+#else
+	struct termios t;
+	if (UNLIKELY(tcgetattr(STDIN_FILENO, &t)))
+		return;
+	t.c_lflag |= ECHO;
+	tcsetattr(STDIN_FILENO, TCSANOW, &t);
+#endif
+}
 
 void DG_Init()
 {
@@ -128,9 +149,16 @@ void DG_Init()
 	const HANDLE hInputHandle = GetStdHandle(STD_INPUT_HANDLE);
 	WINDOWS_CALL(hInputHandle == INVALID_HANDLE_VALUE, "DG_Init: %s");
 	WINDOWS_CALL(!GetConsoleMode(hInputHandle, &mode), "DG_Init: %s");
-	mode &= ~(ENABLE_MOUSE_INPUT | ENABLE_WINDOW_INPUT | ENABLE_QUICK_EDIT_MODE);
+	mode &= ~(ENABLE_MOUSE_INPUT | ENABLE_WINDOW_INPUT | ENABLE_QUICK_EDIT_MODE | ENABLE_ECHO_INPUT);
 	WINDOWS_CALL(!SetConsoleMode(hInputHandle, mode), "DG_Init: %s");
+#else
+	struct termios t;
+	CALL(tcgetattr(STDIN_FILENO, &t), "DG_Init: tcgetattr error %d");
+	t.c_lflag &= ~(ECHO);
+	CALL(tcsetattr(STDIN_FILENO, TCSANOW, &t), "DG_Init: tcsetattr error %d");
 #endif
+	atexit(&DG_AtExit);
+
 	/* Longest SGR code: \033[38;2;RRR;GGG;BBBm (length 19)
 	 * Maximum 21 bytes per pixel: SGR + 2 x char
 	 * 1 Newline character per line
@@ -220,11 +248,105 @@ uint32_t DG_GetTicksMs()
 	return (ts.tv_sec - ts_init.tv_sec) * 1000 + (ts.tv_nsec - ts_init.tv_nsec) / 1000000;
 }
 
-char convertToDoomKey(char **buf)
+#ifdef OS_WINDOWS
+unsigned char convertToDoomKey(WORD wVirtualKeyCode, CHAR AsciiChar)
+{
+	switch (wVirtualKeyCode) {
+	case VK_RETURN:
+		return KEY_ENTER;
+	case VK_LEFT:
+		return KEY_LEFTARROW;
+	case VK_UP:
+		return KEY_UPARROW;
+	case VK_RIGHT:
+		return KEY_RIGHTARROW;
+	case VK_DOWN:
+		return KEY_DOWNARROW;
+	case VK_SPACE:
+		return KEY_FIRE;
+	case VK_TAB:
+		return KEY_TAB;
+	case VK_F1:
+		return KEY_F1;
+	case VK_F2:
+		return KEY_F2;
+	case VK_F3:
+		return KEY_F3;
+	case VK_F4:
+		return KEY_F4;
+	case VK_F5:
+		return KEY_F5;
+	case VK_F6:
+		return KEY_F6;
+	case VK_F7:
+		return KEY_F7;
+	case VK_F8:
+		return KEY_F8;
+	case VK_F9:
+		return KEY_F9;
+	case VK_F10:
+		return KEY_F10;
+	case VK_F11:
+		return KEY_F11;
+	case VK_F12:
+		return KEY_F12;
+	case VK_BACK:
+		return KEY_BACKSPACE;
+	case VK_PAUSE:
+		return KEY_PAUSE;
+	case VK_RSHIFT:
+		return KEY_RSHIFT;
+	case VK_RCONTROL:
+		return KEY_RCTRL;
+	case VK_CAPITAL:
+		return KEY_CAPSLOCK;
+	case VK_NUMLOCK:
+		return KEY_NUMLOCK;
+	case VK_SCROLL:
+		return KEY_SCRLCK;
+	case VK_SNAPSHOT:
+		return KEY_PRTSCR;
+	case VK_HOME:
+		return KEY_HOME;
+	case VK_END:
+		return KEY_END;
+	case VK_PRIOR:
+		return KEY_PGUP;
+	case VK_NEXT:
+		return KEY_PGDN;
+	case VK_INSERT:
+		return KEY_INS;
+	case VK_DELETE:
+		return KEY_DEL;
+	case VK_NUMPAD0:
+		return KEYP_0;
+	case VK_NUMPAD1:
+		return KEYP_1;
+	case VK_NUMPAD2:
+		return KEYP_2;
+	case VK_NUMPAD3:
+		return KEYP_3;
+	case VK_NUMPAD4:
+		return KEYP_4;
+	case VK_NUMPAD5:
+		return KEYP_5;
+	case VK_NUMPAD6:
+		return KEYP_6;
+	case VK_NUMPAD7:
+		return KEYP_7;
+	case VK_NUMPAD8:
+		return KEYP_8;
+	case VK_NUMPAD9:
+		return KEYP_9;
+	default:
+		return tolower(AsciiChar);
+	}
+}
+#else
+unsigned char convertToDoomKey(char **buf)
 {
 	switch (**buf) {
 	case '\012':
-		(*buf)++;
 		return KEY_ENTER;
 	case '\033':
 		(*buf)++;
@@ -233,57 +355,109 @@ char convertToDoomKey(char **buf)
 			(*buf)++;
 			switch (**buf) {
 			case 'A':
-				(*buf)++;
 				return KEY_UPARROW;
 			case 'B':
-				(*buf)++;
 				return KEY_DOWNARROW;
 			case 'C':
-				(*buf)++;
 				return KEY_RIGHTARROW;
 			case 'D':
-				(*buf)++;
 				return KEY_LEFTARROW;
+			case 'H':
+				return KEY_HOME;
+			case 'F':
+				return KEY_END;
+			case '1':
+				(*buf)++;
+				switch (**buf) {
+				case '5':
+					if (*(++(*buf)) == '~')
+						return KEY_F5;
+					break;
+				case '7':
+					if (*(++(*buf)) == '~')
+						return KEY_F6;
+					break;
+				case '8':
+					if (*(++(*buf)) == '~')
+						return KEY_F7;
+					break;
+				case '9':
+					if (*(++(*buf)) == '~')
+						return KEY_F8;
+					break;
+				}
+				break;
+			case '2':
+				(*buf)++;
+				switch (**buf) {
+				case '0':
+					if (*(++(*buf)) == '~')
+						return KEY_F9;
+					break;
+				case '1':
+					if (*(++(*buf)) == '~')
+						return KEY_F10;
+					break;
+				case '3':
+					if (*(++(*buf)) == '~')
+						return KEY_F11;
+					break;
+				case '4':
+					if (*(++(*buf)) == '~')
+						return KEY_F12;
+					break;
+				case '~':
+					return KEY_INS;
+				}
+				break;
+			case '3':
+				if (*(++(*buf)) == '~')
+					return KEY_DEL;
+				break;
+			case '5':
+				if (*(++(*buf)) == '~')
+					return KEY_PGUP;
+				break;
+			case '6':
+				if (*(++(*buf)) == '~')
+					return KEY_PGDN;
+				break;
 			}
+			break;
+		case 'O':
+			(*buf)++;
+			switch (**buf) {
+			case 'P':
+				return KEY_F1;
+			case 'Q':
+				return KEY_F2;
+			case 'R':
+				return KEY_F3;
+			case 'S':
+				return KEY_F4;
+			}
+			break;
 		default:
 			return KEY_ESCAPE;
 		}
 	case ' ':
-		(*buf)++;
 		return KEY_FIRE;
 	default:
-		return tolower(*((*buf)++));
+		return tolower(**buf);
 	}
+	return '\0';
 }
+#endif
 
 void DG_ReadInput(void)
 {
-	static char prev_input_buffer[INPUT_BUFFER_LEN];
-	static char raw_input_buffer[INPUT_BUFFER_LEN];
+	static unsigned char prev_input_buffer[INPUT_BUFFER_LEN];
 
 	memcpy(prev_input_buffer, input_buffer, INPUT_BUFFER_LEN);
-	memset(raw_input_buffer, '\0', INPUT_BUFFER_LEN);
 	memset(input_buffer, '\0', INPUT_BUFFER_LEN);
 	memset(event_buffer, '\0', 2u * EVENT_BUFFER_LEN);
 	event_buf_loc = event_buffer;
-#if defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))
-	struct termios oldt, newt;
-
-	/* Disable canonical mode */
-	CALL(tcgetattr(STDIN_FILENO, &oldt), "DG_DrawFrame: tcgetattr error %d");
-	newt = oldt;
-	newt.c_lflag &= ~(ICANON);
-	newt.c_cc[VMIN] = 0;
-	newt.c_cc[VTIME] = 0;
-	CALL(tcsetattr(STDIN_FILENO, TCSANOW, &newt), "DG_DrawFrame: tcsetattr error %d");
-
-	CALL(read(2, raw_input_buffer, INPUT_BUFFER_LEN - 1u) < 0, "DG_DrawFrame: read error %d");
-
-	CALL(tcsetattr(STDIN_FILENO, TCSANOW, &oldt), "DG_DrawFrame: tcsetattr error %d");
-
-	/* Flush input buffer to prevent read of previous unread input */
-	CALL(tcflush(STDIN_FILENO, TCIFLUSH), "DG_DrawFrame: tcflush error %d");
-#else /* defined(OS_WINDOWS) */
+#ifdef OS_WINDOWS
 	const HANDLE hInputHandle = GetStdHandle(STD_INPUT_HANDLE);
 	WINDOWS_CALL(hInputHandle == INVALID_HANDLE_VALUE, "DG_ReadInput: %s");
 
@@ -306,21 +480,46 @@ void DG_ReadInput(void)
 		DWORD i;
 		for (i = 0; i < event_cnt; i++) {
 			if (input_records[i].Event.KeyEvent.bKeyDown && input_records[i].EventType == KEY_EVENT) {
-				raw_input_buffer[input_count++] = input_records[i].Event.KeyEvent.uChar.AsciiChar;
-				if (input_count == INPUT_BUFFER_LEN - 1u)
-					break;
+				unsigned char inp = convertToDoomKey(input_records[i].Event.KeyEvent.wVirtualKeyCode, input_records[i].Event.KeyEvent.uChar.AsciiChar);
+				if (inp) {
+					input_buffer[input_count++] = inp;
+					if (input_count == INPUT_BUFFER_LEN - 1u)
+						break;
+				}
 			}
 		}
 	}
 
 	WINDOWS_CALL(!SetConsoleMode(hInputHandle, old_mode), "DG_ReadInput: %s");
-#endif
+#else /* defined(OS_WINDOWS) */
+	static char raw_input_buffer[INPUT_BUFFER_LEN];
+	struct termios oldt, newt;
+
+	memset(raw_input_buffer, '\0', INPUT_BUFFER_LEN);
+
+	/* Disable canonical mode */
+	CALL(tcgetattr(STDIN_FILENO, &oldt), "DG_DrawFrame: tcgetattr error %d");
+	newt = oldt;
+	newt.c_lflag &= ~(ICANON);
+	newt.c_cc[VMIN] = 0;
+	newt.c_cc[VTIME] = 0;
+	CALL(tcsetattr(STDIN_FILENO, TCSANOW, &newt), "DG_DrawFrame: tcsetattr error %d");
+
+	CALL(read(2, raw_input_buffer, INPUT_BUFFER_LEN - 1u) < 0, "DG_DrawFrame: read error %d");
+
+	CALL(tcsetattr(STDIN_FILENO, TCSANOW, &oldt), "DG_DrawFrame: tcsetattr error %d");
+
+	/* Flush input buffer to prevent read of previous unread input */
+	CALL(tcflush(STDIN_FILENO, TCIFLUSH), "DG_DrawFrame: tcflush error %d");
+
 	/* create input buffer */
 	char *raw_input_buf_loc = raw_input_buffer;
-	char *input_buf_loc = input_buffer;
-	while (*raw_input_buf_loc)
+	unsigned char *input_buf_loc = input_buffer;
+	while (*raw_input_buf_loc) {
 		*input_buf_loc++ = convertToDoomKey(&raw_input_buf_loc);
-
+		raw_input_buf_loc++;
+	}
+#endif
 	/* construct event array */
 	int i, j;
 	for (i = 0; input_buffer[i]; i++) {
