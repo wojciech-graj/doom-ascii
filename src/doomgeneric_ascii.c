@@ -40,16 +40,16 @@
 #ifdef OS_WINDOWS
 #define CLK 0
 
-#define WINDOWS_CALL(cond_, format_)       \
-	do {                               \
-		if (UNLIKELY(cond_))       \
-			winError(format_); \
+#define WINDOWS_CALL(cond, format)        \
+	do {                              \
+		if (UNLIKELY(cond))       \
+			winError(format); \
 	} while (0)
 
-void winError(char *format)
+static void winError(char *const format)
 {
 	LPVOID lpMsgBuf;
-	DWORD dw = GetLastError();
+	const DWORD dw = GetLastError();
 	errno = dw;
 	FormatMessage(
 		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
@@ -66,7 +66,7 @@ struct timespec {
 	long tv_sec;
 	long tv_nsec;
 };
-int clock_gettime(int p, struct timespec *spec)
+int clock_gettime(const int p, struct timespec *const spec)
 {
 	(void)p;
 	__int64 wintime;
@@ -81,25 +81,31 @@ int clock_gettime(int p, struct timespec *spec)
 #define CLK CLOCK_REALTIME
 #endif
 
-#define UNLIKELY(x_) __builtin_expect((x_), 0)
-#define CALL(stmt_, format_)                     \
-	do {                                     \
-		if (UNLIKELY(stmt_))             \
-			I_Error(format_, errno); \
-	} while (0)
-#define CALL_STDOUT(stmt_, format_) CALL((stmt_) == EOF, format_)
+#ifdef __GNUC__
+#define UNLIKELY(x) __builtin_expect((x), 0)
+#else
+#define UNLIKELY(x) (x)
+#endif
 
-#define BYTE_TO_TEXT(buf_, byte_)                      \
-	do {                                           \
-		*(buf_)++ = '0' + (byte_) / 100u;      \
-		*(buf_)++ = '0' + (byte_) / 10u % 10u; \
-		*(buf_)++ = '0' + (byte_) % 10u;       \
+#define CALL(stmt, format)                      \
+	do {                                    \
+		if (UNLIKELY(stmt))             \
+			I_Error(format, errno); \
+	} while (0)
+#define CALL_STDOUT(stmt, format) CALL((stmt) == EOF, format)
+
+#define BYTE_TO_TEXT(buf, byte)                      \
+	do {                                         \
+		*(buf)++ = '0' + (byte) / 100u;      \
+		*(buf)++ = '0' + (byte) / 10u % 10u; \
+		*(buf)++ = '0' + (byte) % 10u;       \
 	} while (0)
 
-const char grad[] = " .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
 #define GRAD_LEN 70u
 #define INPUT_BUFFER_LEN 16u
-#define EVENT_BUFFER_LEN (INPUT_BUFFER_LEN * 2u - 1u)
+#define EVENT_BUFFER_LEN ((INPUT_BUFFER_LEN)*2u - 1u)
+
+static const char grad[] = " .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
 
 struct color_t {
 	uint32_t b : 8;
@@ -108,13 +114,13 @@ struct color_t {
 	uint32_t a : 8;
 };
 
-char *output_buffer;
-size_t output_buffer_size;
-struct timespec ts_init;
+static char *output_buffer;
+static size_t output_buffer_size;
+static struct timespec ts_init;
 
-unsigned char input_buffer[INPUT_BUFFER_LEN];
-uint16_t event_buffer[EVENT_BUFFER_LEN];
-uint16_t *event_buf_loc;
+static unsigned char input_buffer[INPUT_BUFFER_LEN];
+static uint16_t event_buffer[EVENT_BUFFER_LEN];
+static uint16_t *event_buf_loc;
 
 void DG_AtExit(void)
 {
@@ -157,7 +163,7 @@ void DG_Init()
 	t.c_lflag &= ~(ECHO);
 	CALL(tcsetattr(STDIN_FILENO, TCSANOW, &t), "DG_Init: tcsetattr error %d");
 #endif
-	atexit(&DG_AtExit);
+	CALL(atexit(&DG_AtExit), "DG_Init: atexit error %d");
 
 	/* Longest SGR code: \033[38;2;RRR;GGG;BBBm (length 19)
 	 * Maximum 21 bytes per pixel: SGR + 2 x char
@@ -178,7 +184,7 @@ void DG_DrawFrame()
 	static bool first_frame = true;
 	if (first_frame) {
 		first_frame = false;
-		fputs("\033[1;1H\033[2J", stdout);
+		CALL_STDOUT(fputs("\033[1;1H\033[2J", stdout), "DG_DrawFrame: fputs error %d");
 	}
 
 	/* fill output buffer */
@@ -218,7 +224,7 @@ void DG_DrawFrame()
 	*buf = 'm';
 
 	/* move cursor to top left corner and set bold text*/
-	fputs("\033[;H\033[1m", stdout);
+	CALL_STDOUT(fputs("\033[;H\033[1m", stdout), "DG_DrawFrame: fputs error %d");
 
 	/* flush output buffer */
 	CALL_STDOUT(fputs(output_buffer, stdout), "DG_DrawFrame: fputs error %d");
@@ -227,12 +233,12 @@ void DG_DrawFrame()
 	memset(output_buffer, '\0', buf - output_buffer + 1u);
 }
 
-void DG_SleepMs(uint32_t ms)
+void DG_SleepMs(const uint32_t ms)
 {
 #ifdef OS_WINDOWS
 	Sleep(ms);
 #else
-	struct timespec ts = (struct timespec){
+	const struct timespec ts = (struct timespec){
 		.tv_sec = ms / 1000,
 		.tv_nsec = (ms % 1000ul) * 1000000,
 	};
@@ -249,7 +255,7 @@ uint32_t DG_GetTicksMs()
 }
 
 #ifdef OS_WINDOWS
-unsigned char convertToDoomKey(WORD wVirtualKeyCode, CHAR AsciiChar)
+static inline unsigned char convertToDoomKey(const WORD wVirtualKeyCode, const CHAR AsciiChar)
 {
 	switch (wVirtualKeyCode) {
 	case VK_RETURN:
@@ -262,8 +268,6 @@ unsigned char convertToDoomKey(WORD wVirtualKeyCode, CHAR AsciiChar)
 		return KEY_RIGHTARROW;
 	case VK_DOWN:
 		return KEY_DOWNARROW;
-	case VK_SPACE:
-		return KEY_FIRE;
 	case VK_TAB:
 		return KEY_TAB;
 	case VK_F1:
@@ -343,88 +347,109 @@ unsigned char convertToDoomKey(WORD wVirtualKeyCode, CHAR AsciiChar)
 	}
 }
 #else
-unsigned char convertToDoomKey(char **buf)
+static unsigned char doomKeyIfTilda(const char **const buf, const unsigned char key)
+{
+	if (*((*buf) + 1) != '~')
+		return '\0';
+	(*buf)++;
+	return key;
+}
+
+static inline unsigned char convertCsiToDoomKey(const char **const buf)
+{
+	switch (**buf) {
+	case 'A':
+		return KEY_UPARROW;
+	case 'B':
+		return KEY_DOWNARROW;
+	case 'C':
+		return KEY_RIGHTARROW;
+	case 'D':
+		return KEY_LEFTARROW;
+	case 'H':
+		return KEY_HOME;
+	case 'F':
+		return KEY_END;
+	case '1':
+		switch (*((*buf) + 1)) {
+		case '5':
+			(*buf)++;
+			return doomKeyIfTilda(buf, KEY_F5);
+		case '7':
+			(*buf)++;
+			return doomKeyIfTilda(buf, KEY_F6);
+		case '8':
+			(*buf)++;
+			return doomKeyIfTilda(buf, KEY_F7);
+		case '9':
+			(*buf)++;
+			return doomKeyIfTilda(buf, KEY_F8);
+		default:
+			return '\0';
+		}
+	case '2':
+		switch (*((*buf) + 1)) {
+		case '0':
+			(*buf)++;
+			return doomKeyIfTilda(buf, KEY_F9);
+		case '1':
+			(*buf)++;
+			return doomKeyIfTilda(buf, KEY_F10);
+		case '3':
+			(*buf)++;
+			return doomKeyIfTilda(buf, KEY_F11);
+		case '4':
+			(*buf)++;
+			return doomKeyIfTilda(buf, KEY_F12);
+		case '~':
+			(*buf)++;
+			return KEY_INS;
+		default:
+			return '\0';
+		}
+	case '3':
+		return doomKeyIfTilda(buf, KEY_DEL);
+	case '5':
+		return doomKeyIfTilda(buf, KEY_PGUP);
+	case '6':
+		return doomKeyIfTilda(buf, KEY_PGDN);
+	default:
+		return '\0';
+	}
+}
+
+static inline unsigned char convertSs3ToDoomKey(const char **const buf)
+{
+	switch (**buf) {
+	case 'P':
+		return KEY_F1;
+	case 'Q':
+		return KEY_F2;
+	case 'R':
+		return KEY_F3;
+	case 'S':
+		return KEY_F4;
+	default:
+		return '\0';
+	}
+}
+
+static inline unsigned char convertToDoomKey(const char **const buf)
 {
 	switch (**buf) {
 	case '\012':
 		return KEY_ENTER;
 	case '\033':
-		(*buf)++;
-		switch (**buf) {
+		switch (*((*buf) + 1)) {
 		case '[':
-			(*buf)++;
-			switch (**buf) {
-			case 'A':
-				return KEY_UPARROW;
-			case 'B':
-				return KEY_DOWNARROW;
-			case 'C':
-				return KEY_RIGHTARROW;
-			case 'D':
-				return KEY_LEFTARROW;
-			case 'H':
-				return KEY_HOME;
-			case 'F':
-				return KEY_END;
-			case '1':
-				(*buf)++;
-				switch (**buf) {
-				case '5':
-					return (*(++(*buf)) == '~') ? KEY_F5 : '\0';
-				case '7':
-					return (*(++(*buf)) == '~') ? KEY_F6 : '\0';
-				case '8':
-					return (*(++(*buf)) == '~') ? KEY_F7 : '\0';
-				case '9':
-					return (*(++(*buf)) == '~') ? KEY_F8 : '\0';
-				default:
-					return '\0';
-				}
-			case '2':
-				(*buf)++;
-				switch (**buf) {
-				case '0':
-					return (*(++(*buf)) == '~') ? KEY_F9 : '\0';
-				case '1':
-					return (*(++(*buf)) == '~') ? KEY_F10 : '\0';
-				case '3':
-					return (*(++(*buf)) == '~') ? KEY_F11 : '\0';
-				case '4':
-					return (*(++(*buf)) == '~') ? KEY_F12 : '\0';
-				case '~':
-					return KEY_INS;
-				default:
-					return '\0';
-				}
-			case '3':
-				return (*(++(*buf)) == '~') ? KEY_DEL : '\0';
-			case '5':
-				return (*(++(*buf)) == '~') ? KEY_PGUP : '\0';
-			case '6':
-				return (*(++(*buf)) == '~') ? KEY_PGDN : '\0';
-			default:
-				return '\0';
-			}
+			*buf += 2;
+			return convertCsiToDoomKey(buf);
 		case 'O':
-			(*buf)++;
-			switch (**buf) {
-			case 'P':
-				return KEY_F1;
-			case 'Q':
-				return KEY_F2;
-			case 'R':
-				return KEY_F3;
-			case 'S':
-				return KEY_F4;
-			default:
-				return '\0';
-			}
+			*buf += 2;
+			return convertSs3ToDoomKey(buf);
 		default:
-			(*buf)--;
 			return KEY_ESCAPE;
 		}
-	case ' ':
-		return KEY_FIRE;
 	default:
 		return tolower(**buf);
 	}
@@ -437,7 +462,7 @@ void DG_ReadInput(void)
 
 	memcpy(prev_input_buffer, input_buffer, INPUT_BUFFER_LEN);
 	memset(input_buffer, '\0', INPUT_BUFFER_LEN);
-	memset(event_buffer, '\0', 2u * EVENT_BUFFER_LEN);
+	memset(event_buffer, '\0', 2u * (size_t)EVENT_BUFFER_LEN);
 	event_buf_loc = event_buffer;
 #ifdef OS_WINDOWS
 	const HANDLE hInputHandle = GetStdHandle(STD_INPUT_HANDLE);
@@ -454,7 +479,7 @@ void DG_ReadInput(void)
 	WINDOWS_CALL(!GetNumberOfConsoleInputEvents(hInputHandle, &event_cnt), "DG_ReadInput: %s");
 
 	/* ReadConsole is blocking so must manually process events */
-	int input_count = 0;
+	unsigned input_count = 0;
 	if (event_cnt) {
 		INPUT_RECORD input_records[32];
 		WINDOWS_CALL(!ReadConsoleInput(hInputHandle, input_records, 32, &event_cnt), "DG_ReadInput: %s");
@@ -495,10 +520,10 @@ void DG_ReadInput(void)
 	CALL(tcflush(STDIN_FILENO, TCIFLUSH), "DG_DrawFrame: tcflush error %d");
 
 	/* create input buffer */
-	char *raw_input_buf_loc = raw_input_buffer;
+	const char *raw_input_buf_loc = raw_input_buffer;
 	unsigned char *input_buf_loc = input_buffer;
 	while (*raw_input_buf_loc) {
-		unsigned char inp = convertToDoomKey(&raw_input_buf_loc);
+		const unsigned char inp = convertToDoomKey(&raw_input_buf_loc);
 		if (!inp)
 			break;
 		*input_buf_loc++ = inp;
@@ -538,7 +563,7 @@ void DG_ReadInput(void)
 	event_buf_loc = event_buffer;
 }
 
-int DG_GetKey(int *pressed, unsigned char *doomKey)
+int DG_GetKey(int *const pressed, unsigned char *const doomKey)
 {
 	if (!*event_buf_loc)
 		return 0;
