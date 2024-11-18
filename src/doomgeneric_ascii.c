@@ -574,7 +574,9 @@ int DG_GetKey(int *const pressed, unsigned char *const doomKey)
 	return 1;
 }
 
-void DG_SetWindowTitle(const char *title)
+void DG_SetWindowTitle(const char *const title)
 {
-	(void)title;
+	CALL_STDOUT(fputs("\033]2;", stdout), "DG_SetWindowTitle: fputs error %d");
+	CALL_STDOUT(fputs(title, stdout), "DG_SetWindowTitle: fputs error %d");
+	CALL_STDOUT(fputs("\033\\", stdout), "DG_SetWindowTitle: fputs error %d");
 }
