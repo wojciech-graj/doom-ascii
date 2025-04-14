@@ -14,7 +14,7 @@ telnet doom.w-graj.net 666
 ```
 
 ## Build
-Binaries for Windows and Linux are provided as github releases.
+Binaries for Windows and Linux are provided as [github releases](https://github.com/wojciech-graj/doom-ascii/releases).
 
 ### Linux / Mac
 Requires Make and a C compiler. Creates ```doom_ascii/doom_ascii```
@@ -61,7 +61,7 @@ For a better playing experience, increase the keyboard repeat rate, and reduce t
 
 ## Troubleshooting
 ### Colours are displayed incorrectly
-If the displayed image looks something like [this](https://github.com/wojciech-graj/doom-ascii/issues/8), you are likely using a terminal that does not support 24 bit RGB. See [this](https://gist.github.com/sindresorhus/bed863fb8bedf023b833c88c322e44f9) for more details, troubleshooting information, and a list of supported terminals.
+If the displayed image looks something like [this](https://github.com/wojciech-graj/doom-ascii/issues/8), you are likely using a terminal that does not support 24 bit RGB. See [this](https://github.com/termstandard/colors) for more details, troubleshooting information, and a list of supported terminals.
 
 ### Running make throws an error
 Run `make --version` and `cc --version` to verify that you have Make and a C compiler installed. If you do, and you're still getting an error, file a github issue.
