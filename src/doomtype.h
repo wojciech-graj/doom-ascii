@@ -65,22 +65,19 @@
 
 #include <inttypes.h>
 
-#ifdef __cplusplus
-
-// Use builtin bool type with C++.
-
-typedef bool bool;
-
+#if (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L) || defined(__cplusplus)
+// For C99+ and C++, use the standard boolean type
+#include <stdbool.h>
 #else
-
-typedef enum
-{
-    false	= 0,
-    true	= 1,
-	undef	= 0xFFFFFFFF
-} bool;
-
+// For older C standards, use the original custom enum
+typedef enum { false = 0, true = 1 } bool;
 #endif
+
+// The original enum also defined an 'undef' state.
+// left for compatibility
+enum {
+    undef = 0xFFFFFFFF
+};
 
 typedef uint8_t byte;
 
