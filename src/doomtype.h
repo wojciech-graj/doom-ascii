@@ -65,9 +65,9 @@
 
 #include <inttypes.h>
 
-#if (defined __STDC_VERSION__ && __STDC_VERSION__ >= 199901L) || defined __cplusplus
+#if (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L) || defined(__cplusplus)
 // For C99+ and C++, use the standard boolean type
-#  include <stdbool.h>
+#include <stdbool.h>
 #else
 // For older C standards, use the original custom enum
 typedef enum { false = 0, true = 1 } bool;
