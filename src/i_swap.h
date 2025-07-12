@@ -1,6 +1,7 @@
 //
 // Copyright(C) 1993-1996 Id Software, Inc.
 // Copyright(C) 2005-2014 Simon Howard
+// Copyright(C) 2026 Wojciech Graj
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -20,35 +21,25 @@
 #ifndef __I_SWAP__
 #define __I_SWAP__
 
-#ifdef ORIGCODE
-#include "SDL_endian.h"
-
-// Endianess handling.
-// WAD files are stored little endian.
-
-// Just use SDL's endianness swapping functions.
-
-// These are deliberately cast to signed values; this is the behaviour
-// of the macros in the original source and some code relies on it.
-
-#define SHORT(x)  ((signed short) SDL_SwapLE16(x))
-#define LONG(x)   ((signed int) SDL_SwapLE32(x))
-
-// Defines for checking the endianness of the system.
-
-#if SDL_BYTEORDER == SYS_LIL_ENDIAN
+#if ( __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ )
 #define SYS_LITTLE_ENDIAN
-#elif SDL_BYTEORDER == SYS_BIG_ENDIAN
-#define SYS_BIG_ENDIAN
-#endif
-
-#else
-	
 #define SHORT(x)  ((signed short) (x))
 #define LONG(x)   ((signed int) (x))
+#elif ( __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__ )
+#define SYS_BIG_ENDIAN
 
-#define SYS_LITTLE_ENDIAN
+static inline unsigned short swapLE16(unsigned short val) {
+	return ((val << 8) | (val >> 8));
+}
+
+static inline unsigned long swapLE32(unsigned long val) {
+	return ((val << 24) | ((val << 8) & 0x00FF0000) | ((val >> 8) & 0x0000FF00) | (val >> 24));
+}
+
+#define SHORT(x)  ((signed short) swapLE16(x))
+#define LONG(x)   ((signed int) swapLE32(x))
+#else
+#error "Unknown byte order"
+#endif
 
 #endif
-#endif
-
