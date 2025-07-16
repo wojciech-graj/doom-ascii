@@ -114,12 +114,10 @@ static int clock_gettime(const int p, struct timespec *const spec)
 
 #define static_strlen(s) (sizeof(s) - 1)
 
-#define GRAD_LEN static_strlen(grad)
-#define EVENT_BUFFER_LEN (INPUT_BUFFER_LEN * 2u - 1u)
-
 enum {
 	UNICODE_GRAD_LEN = 4U,
 	INPUT_BUFFER_LEN = 16U,
+	EVENT_BUFFER_LEN = 257U,
 	RGB_SUM_MAX = 776U,
 };
 
@@ -163,15 +161,20 @@ struct color_t {
 	uint32_t a : 8;
 };
 
+struct event_buffer_t {
+	bool pressed;
+	unsigned char key;
+};
+
 enum character_set_t { ASCII, BLOCK, BRAILLE };
 
 static char *output_buffer;
 static size_t output_buffer_size;
 static struct timespec ts_init;
 
-static unsigned char input_buffer[INPUT_BUFFER_LEN];
-static uint16_t event_buffer[EVENT_BUFFER_LEN];
-static uint16_t *event_buf_loc;
+static struct timespec input_buffer[256] = { 0 };
+static struct event_buffer_t event_buffer[EVENT_BUFFER_LEN] = { 0 };
+static struct event_buffer_t *event_buf_loc;
 
 static bool color_enabled;
 static enum character_set_t character_set = ASCII;
@@ -179,6 +182,14 @@ static bool gradient_enabled;
 static bool bold_enabled;
 static bool erase_enabled;
 static bool gamma_correct_enabled;
+static unsigned keypress_smoothing_ms = 42;
+
+static int64_t sub_timespec_ms(
+	const struct timespec *const time1, const struct timespec *const time0)
+{
+	return (time1->tv_sec - time0->tv_sec) * 1000L
+		+ (time1->tv_nsec - time0->tv_nsec) / 1000000L;
+}
 
 void DG_AtExit(void)
 {
@@ -246,6 +257,10 @@ void DG_Init(void)
 		}
 	}
 
+	i = M_CheckParmWithArgs("-kpsmooth", 1);
+	if (i > 0)
+		keypress_smoothing_ms = atoi(myargv[i + 1]);
+
 	if (character_set != ASCII && !setlocale(LC_ALL, "en_US.UTF-8"))
 		I_Error("DG_Init: setlocale error");
 
@@ -265,8 +280,6 @@ void DG_Init(void)
 	output_buffer = malloc(output_buffer_size);
 
 	CALL(clock_gettime(CLK, &ts_init), "DG_Init: clock_gettime error %d");
-
-	memset(input_buffer, '\0', INPUT_BUFFER_LEN);
 }
 
 void DG_DrawFrame(void)
@@ -312,7 +325,7 @@ void DG_DrawFrame(void)
 			case ASCII:
 				if (gradient_enabled) {
 					const char v_char = grad[(pixel->r + pixel->g + pixel->b)
-						* GRAD_LEN / RGB_SUM_MAX];
+						* static_strlen(grad) / RGB_SUM_MAX];
 					BUF_PUTCHAR(buf, v_char);
 					BUF_PUTCHAR(buf, v_char);
 				} else {
@@ -590,12 +603,11 @@ static inline unsigned char convertToDoomKey(const char **const buf)
 
 void DG_ReadInput(void)
 {
-	static unsigned char prev_input_buffer[INPUT_BUFFER_LEN];
+	struct timespec prev_input_buffer[256];
+	memcpy(prev_input_buffer, input_buffer, sizeof(struct timespec[256]));
 
-	memcpy(prev_input_buffer, input_buffer, INPUT_BUFFER_LEN);
-	memset(input_buffer, '\0', INPUT_BUFFER_LEN);
-	memset(event_buffer, '\0', 2U * (size_t)EVENT_BUFFER_LEN);
-	event_buf_loc = event_buffer;
+	struct timespec now;
+	CALL(clock_gettime(CLK, &now), "DG_ReadInput: clock_gettime error %d");
 #ifdef OS_WINDOWS
 	const HANDLE hInputHandle = GetStdHandle(STD_INPUT_HANDLE);
 	WINDOWS_CALL(hInputHandle == INVALID_HANDLE_VALUE, "DG_ReadInput: %s");
@@ -611,7 +623,6 @@ void DG_ReadInput(void)
 	WINDOWS_CALL(!GetNumberOfConsoleInputEvents(hInputHandle, &event_cnt), "DG_ReadInput: %s");
 
 	/* ReadConsole is blocking so must manually process events */
-	unsigned input_count = 0;
 	if (event_cnt) {
 		INPUT_RECORD input_records[32];
 		WINDOWS_CALL(!ReadConsoleInput(hInputHandle, input_records, 32, &event_cnt),
@@ -624,11 +635,7 @@ void DG_ReadInput(void)
 				unsigned char inp = convertToDoomKey(
 					input_records[i].Event.KeyEvent.wVirtualKeyCode,
 					input_records[i].Event.KeyEvent.uChar.AsciiChar);
-				if (inp) {
-					input_buffer[input_count++] = inp;
-					if (input_count == INPUT_BUFFER_LEN - 1u)
-						break;
-				}
+				input_buffer[inp] = now;
 			}
 		}
 	}
@@ -657,43 +664,31 @@ void DG_ReadInput(void)
 
 	/* create input buffer */
 	const char *raw_input_buf_loc = raw_input_buffer;
-	unsigned char *input_buf_loc = input_buffer;
 	while (*raw_input_buf_loc) {
 		const unsigned char inp = convertToDoomKey(&raw_input_buf_loc);
-		if (!inp)
-			break;
-		*input_buf_loc++ = inp;
+		input_buffer[inp] = now;
 		raw_input_buf_loc++;
 	}
 #endif
-	/* construct event array */
-	int i, j;
-	for (i = 0; input_buffer[i]; i++) {
-		/* skip duplicates */
-		for (j = i + 1; input_buffer[j]; j++) {
-			if (input_buffer[i] == input_buffer[j])
-				goto LBL_CONTINUE_1;
+	memset(event_buffer, '\0', sizeof(struct event_buffer_t[EVENT_BUFFER_LEN]));
+	event_buf_loc = event_buffer;
+
+	int i;
+	for (i = 1; i < 256; i++) {
+		if (!memcmp(&input_buffer[i], &(struct timespec){ 0 }, sizeof(struct timespec)))
+			continue;
+
+		/* depressed events */
+		if (sub_timespec_ms(&now, &input_buffer[i]) > keypress_smoothing_ms) {
+			input_buffer[i] = (struct timespec){ 0 };
+			*event_buf_loc++ = (struct event_buffer_t){ .key = i };
+			continue;
 		}
 
 		/* pressed events */
-		for (j = 0; prev_input_buffer[j]; j++) {
-			if (input_buffer[i] == prev_input_buffer[j])
-				goto LBL_CONTINUE_1;
-		}
-		*event_buf_loc++ = 0x0100 | input_buffer[i];
-
-	LBL_CONTINUE_1:;
-	}
-
-	/* depressed events */
-	for (i = 0; prev_input_buffer[i]; i++) {
-		for (j = 0; input_buffer[j]; j++) {
-			if (prev_input_buffer[i] == input_buffer[j])
-				goto LBL_CONTINUE_2;
-		}
-		*event_buf_loc++ = 0xFF & prev_input_buffer[i];
-
-	LBL_CONTINUE_2:;
+		if (!memcmp(&prev_input_buffer[i], &(struct timespec){ 0 },
+			    sizeof(struct timespec)))
+			*event_buf_loc++ = (struct event_buffer_t){ .key = i, .pressed = true };
 	}
 
 	event_buf_loc = event_buffer;
@@ -701,11 +696,11 @@ void DG_ReadInput(void)
 
 int DG_GetKey(int *const pressed, unsigned char *const doomKey)
 {
-	if (!*event_buf_loc)
+	if (!event_buf_loc->key)
 		return 0;
 
-	*pressed = *event_buf_loc >> 8;
-	*doomKey = *event_buf_loc & 0xFF;
+	*pressed = event_buf_loc->pressed;
+	*doomKey = event_buf_loc->key;
 	event_buf_loc++;
 	return 1;
 }

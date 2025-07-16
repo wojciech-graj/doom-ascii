@@ -39,7 +39,8 @@ The following command-line arguments can be supplied:
 - `-chars <ascii|block|braille>`: Use ASCII characters, [unicode block elements](https://en.wikipedia.org/wiki/Block_Elements), or [braille patterns](https://en.wikipedia.org/wiki/Braille_Patterns).
 - `-erase`: Erase previous frame instead of overwriting. May cause a strobe effect.
 - `-fixgamma`: Scale gamma to offset darkening of pixels caused by using a text gradient. Use with caution, as colors become distorted.
-- `-scaling <n>`: Set resolution. Smaller numbers denote a larger display. A scale of 4 is used by default, and should work flawlessly on all terminals. Most terminals (excluding Windows CMD) should manage with scales up to and including 2.
+- `-kpsmooth <>`: Set the number of ms a key has to be left depressed for it to count as such. Used to counteract jittery inputs when key repeat delay exceeds frametime.
+- `-scaling <>`: Set resolution. Smaller numbers denote a larger display. A scale of 4 is used by default, and should work flawlessly on all terminals. Most terminals (excluding Windows CMD) should manage with scales up to and including 2.
 
 ## Controls
 Default keybindings are listed below.
@@ -64,9 +65,6 @@ Keybinds can be remapped in `.default.cfg`, which should be placed in the same d
 Most terminals aren't designed for massive throughput, so the game cannot be played at full 320x200 resolution at high frames per second.
 
 Pass the command-line argument `-scaling` to determine the level of scaling (See [Settings](#settings)).
-
-### Input
-For a better playing experience, increase the keyboard repeat rate, and reduce the keyboard repeat delay.
 
 ## Troubleshooting
 ### Colours are displayed incorrectly
