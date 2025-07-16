@@ -40,6 +40,7 @@
 
 #ifdef OS_WINDOWS
 #define CLK 0
+#define dg_random rand
 
 #define WINDOWS_CALL(cond, format)                                                                 \
 	do {                                                                                       \
@@ -77,6 +78,7 @@ static int clock_gettime(const int p, struct timespec *const spec)
 
 #else
 #define CLK CLOCK_REALTIME
+#define dg_random random
 #endif
 
 #ifdef __GNUC__
@@ -356,8 +358,10 @@ void DG_DrawFrame(void)
 						const char *const gradient = braille_grads[idx - 1];
 						const size_t len =
 							braille_grad_lengths[idx - 1] / 3;
-						BUF_MEMCPY(buf, &gradient[(random() % len) * 3], 3);
-						BUF_MEMCPY(buf, &gradient[(random() % len) * 3], 3);
+						BUF_MEMCPY(
+							buf, &gradient[(dg_random() % len) * 3], 3);
+						BUF_MEMCPY(
+							buf, &gradient[(dg_random() % len) * 3], 3);
 					} else {
 						BUF_PUTS(buf, "  ");
 					}
