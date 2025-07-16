@@ -121,19 +121,20 @@ enum {
 	INPUT_BUFFER_LEN = 16U,
 	EVENT_BUFFER_LEN = 257U,
 	RGB_SUM_MAX = 776U,
+	DEMO_MAX_MS = 600000U,
 };
 
 static const char grad[] =
 	" .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
 static const char unicode_grad[] = "\u2591\u2592\u2593\u2588";
-const char *braille_grads[] = { "\u2801\u2802\u2804\u2808\u2810\u2820\u2840\u2880",
+static const char *braille_grads[] = { "\u2801\u2802\u2804\u2808\u2810\u2820\u2840\u2880",
 	"\u2803\u2805\u2806\u2809\u280a\u280c\u2811\u2812\u2814\u2818\u2821\u2822\u2824\u2828\u2830\u2841\u2842\u2844\u2848\u2850\u2860\u2881\u2882\u2884\u2888\u2890\u28a0\u28c0",
 	"\u2807\u280b\u280d\u280e\u2813\u2815\u2816\u2819\u281a\u281c\u2823\u2825\u2826\u2829\u282a\u282c\u2831\u2832\u2834\u2838\u2843\u2845\u2846\u2849\u284a\u284c\u2851\u2852\u2854\u2858\u2861\u2862\u2864\u2868\u2870\u2883\u2885\u2886\u2889\u288a\u288c\u2891\u2892\u2894\u2898\u28a1\u28a2\u28a4\u28a8\u28b0\u28c1\u28c2\u28c4\u28c8\u28d0\u28e0",
 	"\u280f\u2817\u281b\u281d\u281e\u2827\u282b\u282d\u282e\u2833\u2835\u2836\u2839\u283a\u283c\u2847\u284b\u284d\u284e\u2853\u2855\u2856\u2859\u285a\u285c\u2863\u2865\u2866\u2869\u286a\u286c\u2871\u2872\u2874\u2878\u2887\u288b\u288d\u288e\u2893\u2895\u2896\u2899\u289a\u289c\u28a3\u28a5\u28a6\u28a9\u28aa\u28ac\u28b1\u28b2\u28b4\u28b8\u28c3\u28c5\u28c6\u28c9\u28ca\u28cc\u28d1\u28d2\u28d4\u28d8\u28e1\u28e2\u28e4\u28e8\u28f0",
 	"\u281f\u282f\u2837\u283b\u283d\u283e\u284f\u2857\u285b\u285d\u285e\u2867\u286b\u286d\u286e\u2873\u2875\u2876\u2879\u287a\u287c\u288f\u2897\u289b\u289d\u289e\u28a7\u28ab\u28ad\u28ae\u28b3\u28b5\u28b6\u28b9\u28ba\u28bc\u28c7\u28cb\u28cd\u28ce\u28d3\u28d5\u28d6\u28d9\u28da\u28dc\u28e3\u28e5\u28e6\u28e9\u28ea\u28ec\u28f1\u28f2\u28f4\u28f8",
 	"\u283f\u285f\u286f\u2877\u287b\u287d\u287e\u289f\u28af\u28b7\u28bb\u28bd\u28be\u28cf\u28d7\u28db\u28dd\u28de\u28e7\u28eb\u28ed\u28ee\u28f3\u28f5\u28f6\u28f9\u28fa\u28fc",
 	"\u287f\u28bf\u28df\u28ef\u28f7\u28fb\u28fd\u28fe", "\u28ff" };
-const size_t braille_grad_lengths[] = { static_strlen(braille_grads[0]),
+static const size_t braille_grad_lengths[] = { static_strlen(braille_grads[0]),
 	static_strlen(braille_grads[1]), static_strlen(braille_grads[2]),
 	static_strlen(braille_grads[3]), static_strlen(braille_grads[4]),
 	static_strlen(braille_grads[5]), static_strlen(braille_grads[6]),
@@ -292,6 +293,15 @@ void DG_DrawFrame(void)
 		first_frame = false;
 		CALL_STDOUT(fputs("\033[1;1H\033[2J", stdout), "DG_DrawFrame: fputs error %d");
 	}
+
+#ifdef DG_DEMO
+	struct timespec now;
+	CALL(clock_gettime(CLK, &now), "DG_DrawFrame: clock_gettime error %d");
+	if (sub_timespec_ms(&now, &ts_init) > DEMO_MAX_MS) {
+		puts("\033[;H\033[2JThe telnet demo of doom-ascii is limited to 10 minutes, as computational\nresources don't grow on trees. Thank you for playing!\n- Wojciech Graj <me@w-graj.net>");
+		exit(0);
+	}
+#endif /* DG_DEMO */
 
 	uint32_t color = 0x00FFFFFF;
 	unsigned row, col;
