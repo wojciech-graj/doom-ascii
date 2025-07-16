@@ -34,10 +34,11 @@ make windows-cross
 
 The following command-line arguments can be supplied:
 - `-nocolor`: Disable color.
-- `-nograd`: Disable text gradients, exclusively use # or █.
+- `-nograd`: Disable text gradients, exclusively use fully filled-in pixels.
 - `-nobold`: Disable bold text.
-- `-unicode`: Use [unicode block elements](https://en.wikipedia.org/wiki/Block_Elements) instead of ASCII characters.
+- `-chars <ascii|block|braille>`: Use ASCII characters, [unicode block elements](https://en.wikipedia.org/wiki/Block_Elements), or [braille patterns](https://en.wikipedia.org/wiki/Braille_Patterns).
 - `-erase`: Erase previous frame instead of overwriting. May cause a strobe effect.
+- `-fixgamma`: Scale gamma to offset darkening of pixels caused by using a text gradient. Use with caution, as colors become distorted.
 - `-scaling <n>`: Set resolution. Smaller numbers denote a larger display. A scale of 4 is used by default, and should work flawlessly on all terminals. Most terminals (excluding Windows CMD) should manage with scales up to and including 2.
 
 ## Controls

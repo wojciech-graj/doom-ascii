@@ -41,10 +41,10 @@
 #ifdef OS_WINDOWS
 #define CLK 0
 
-#define WINDOWS_CALL(cond, format)        \
-	do {                              \
-		if (UNLIKELY(cond))       \
-			winError(format); \
+#define WINDOWS_CALL(cond, format)                                                                 \
+	do {                                                                                       \
+		if (UNLIKELY(cond))                                                                \
+			winError(format);                                                          \
 	} while (0)
 
 static void winError(char *const format)
@@ -52,13 +52,9 @@ static void winError(char *const format)
 	LPVOID lpMsgBuf;
 	const DWORD dw = GetLastError();
 	errno = dw;
-	FormatMessage(
-		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-		NULL,
-		dw,
-		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		(LPTSTR)&lpMsgBuf,
-		0, NULL);
+	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM
+			| FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL, dw, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpMsgBuf, 0, NULL);
 	I_Error(format, lpMsgBuf);
 }
 
@@ -89,37 +85,36 @@ static int clock_gettime(const int p, struct timespec *const spec)
 #define UNLIKELY(x) (x)
 #endif
 
-#define CALL(stmt, format)                      \
-	do {                                    \
-		if (UNLIKELY(stmt))             \
-			I_Error(format, errno); \
+#define CALL(stmt, format)                                                                         \
+	do {                                                                                       \
+		if (UNLIKELY(stmt))                                                                \
+			I_Error(format, errno);                                                    \
 	} while (0)
 #define CALL_STDOUT(stmt, format) CALL((stmt) == EOF, format)
 
-#define BUF_ITOA(buf, byte)                          \
-	do {                                         \
-		*(buf)++ = '0' + (byte) / 100u;      \
-		*(buf)++ = '0' + (byte) / 10u % 10u; \
-		*(buf)++ = '0' + (byte) % 10u;       \
+#define BUF_ITOA(buf, byte)                                                                        \
+	do {                                                                                       \
+		*(buf)++ = '0' + (byte) / 100u;                                                    \
+		*(buf)++ = '0' + (byte) / 10u % 10u;                                               \
+		*(buf)++ = '0' + (byte) % 10u;                                                     \
+	} while (0)
+#define BUF_MEMCPY(buf, s, len)                                                                    \
+	do {                                                                                       \
+		memcpy(buf, s, len);                                                               \
+		(buf) += (len);                                                                    \
+	} while (0)
+#define BUF_PUTS(buf, s)                                                                           \
+	do {                                                                                       \
+		BUF_MEMCPY(buf, s, static_strlen(s));                                              \
+	} while (0)
+#define BUF_PUTCHAR(buf, c)                                                                        \
+	do {                                                                                       \
+		*(buf)++ = c;                                                                      \
 	} while (0)
 
-#define BUF_MEMCPY(buf, s, len)      \
-	do {                         \
-		memcpy(buf, s, len); \
-		(buf) += (len);      \
-	} while (0)
+#define static_strlen(s) (sizeof(s) - 1)
 
-#define BUF_PUTS(buf, s)                           \
-	do {                                       \
-		BUF_MEMCPY(buf, s, sizeof(s) - 1); \
-	} while (0)
-
-#define BUF_PUTCHAR(buf, c)   \
-	do {                  \
-		*(buf)++ = c; \
-	} while (0)
-
-#define GRAD_LEN (sizeof(grad) - 1)
+#define GRAD_LEN static_strlen(grad)
 #define EVENT_BUFFER_LEN (INPUT_BUFFER_LEN * 2u - 1u)
 
 enum {
@@ -128,8 +123,38 @@ enum {
 	RGB_SUM_MAX = 776U,
 };
 
-static const char grad[] = " .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
+static const char grad[] =
+	" .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
 static const char unicode_grad[] = "\u2591\u2592\u2593\u2588";
+const char *braille_grads[] = { "\u2801\u2802\u2804\u2808\u2810\u2820\u2840\u2880",
+	"\u2803\u2805\u2806\u2809\u280a\u280c\u2811\u2812\u2814\u2818\u2821\u2822\u2824\u2828\u2830\u2841\u2842\u2844\u2848\u2850\u2860\u2881\u2882\u2884\u2888\u2890\u28a0\u28c0",
+	"\u2807\u280b\u280d\u280e\u2813\u2815\u2816\u2819\u281a\u281c\u2823\u2825\u2826\u2829\u282a\u282c\u2831\u2832\u2834\u2838\u2843\u2845\u2846\u2849\u284a\u284c\u2851\u2852\u2854\u2858\u2861\u2862\u2864\u2868\u2870\u2883\u2885\u2886\u2889\u288a\u288c\u2891\u2892\u2894\u2898\u28a1\u28a2\u28a4\u28a8\u28b0\u28c1\u28c2\u28c4\u28c8\u28d0\u28e0",
+	"\u280f\u2817\u281b\u281d\u281e\u2827\u282b\u282d\u282e\u2833\u2835\u2836\u2839\u283a\u283c\u2847\u284b\u284d\u284e\u2853\u2855\u2856\u2859\u285a\u285c\u2863\u2865\u2866\u2869\u286a\u286c\u2871\u2872\u2874\u2878\u2887\u288b\u288d\u288e\u2893\u2895\u2896\u2899\u289a\u289c\u28a3\u28a5\u28a6\u28a9\u28aa\u28ac\u28b1\u28b2\u28b4\u28b8\u28c3\u28c5\u28c6\u28c9\u28ca\u28cc\u28d1\u28d2\u28d4\u28d8\u28e1\u28e2\u28e4\u28e8\u28f0",
+	"\u281f\u282f\u2837\u283b\u283d\u283e\u284f\u2857\u285b\u285d\u285e\u2867\u286b\u286d\u286e\u2873\u2875\u2876\u2879\u287a\u287c\u288f\u2897\u289b\u289d\u289e\u28a7\u28ab\u28ad\u28ae\u28b3\u28b5\u28b6\u28b9\u28ba\u28bc\u28c7\u28cb\u28cd\u28ce\u28d3\u28d5\u28d6\u28d9\u28da\u28dc\u28e3\u28e5\u28e6\u28e9\u28ea\u28ec\u28f1\u28f2\u28f4\u28f8",
+	"\u283f\u285f\u286f\u2877\u287b\u287d\u287e\u289f\u28af\u28b7\u28bb\u28bd\u28be\u28cf\u28d7\u28db\u28dd\u28de\u28e7\u28eb\u28ed\u28ee\u28f3\u28f5\u28f6\u28f9\u28fa\u28fc",
+	"\u287f\u28bf\u28df\u28ef\u28f7\u28fb\u28fd\u28fe", "\u28ff" };
+const size_t braille_grad_lengths[] = { static_strlen(braille_grads[0]),
+	static_strlen(braille_grads[1]), static_strlen(braille_grads[2]),
+	static_strlen(braille_grads[3]), static_strlen(braille_grads[4]),
+	static_strlen(braille_grads[5]), static_strlen(braille_grads[6]),
+	static_strlen(braille_grads[7]) };
+
+/* print(','.join(str(int(((i / 255)**0.5) * 255)) for i in range(256))) */
+static const uint8_t byte_sqrt[] = { 0, 15, 22, 27, 31, 35, 39, 42, 45, 47, 50, 52, 55, 57, 59, 61,
+	63, 65, 67, 69, 71, 73, 74, 76, 78, 79, 81, 82, 84, 85, 87, 88, 90, 91, 93, 94, 95, 97, 98,
+	99, 100, 102, 103, 104, 105, 107, 108, 109, 110, 111, 112, 114, 115, 116, 117, 118, 119,
+	120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137,
+	138, 139, 140, 141, 141, 142, 143, 144, 145, 146, 147, 148, 148, 149, 150, 151, 152, 153,
+	153, 154, 155, 156, 157, 158, 158, 159, 160, 161, 162, 162, 163, 164, 165, 165, 166, 167,
+	168, 168, 169, 170, 171, 171, 172, 173, 174, 174, 175, 176, 177, 177, 178, 179, 179, 180,
+	181, 182, 182, 183, 184, 184, 185, 186, 186, 187, 188, 188, 189, 190, 190, 191, 192, 192,
+	193, 194, 194, 195, 196, 196, 197, 198, 198, 199, 200, 200, 201, 201, 202, 203, 203, 204,
+	205, 205, 206, 206, 207, 208, 208, 209, 210, 210, 211, 211, 212, 213, 213, 214, 214, 215,
+	216, 216, 217, 217, 218, 218, 219, 220, 220, 221, 221, 222, 222, 223, 224, 224, 225, 225,
+	226, 226, 227, 228, 228, 229, 229, 230, 230, 231, 231, 232, 233, 233, 234, 234, 235, 235,
+	236, 236, 237, 237, 238, 238, 239, 240, 240, 241, 241, 242, 242, 243, 243, 244, 244, 245,
+	245, 246, 246, 247, 247, 248, 248, 249, 249, 250, 250, 251, 251, 252, 252, 253, 253, 254,
+	255 };
 
 struct color_t {
 	uint32_t b : 8;
@@ -137,6 +162,8 @@ struct color_t {
 	uint32_t r : 8;
 	uint32_t a : 8;
 };
+
+enum character_set_t { ASCII, BLOCK, BRAILLE };
 
 static char *output_buffer;
 static size_t output_buffer_size;
@@ -147,10 +174,11 @@ static uint16_t event_buffer[EVENT_BUFFER_LEN];
 static uint16_t *event_buf_loc;
 
 static bool color_enabled;
-static bool unicode_enabled;
+static enum character_set_t character_set = ASCII;
 static bool gradient_enabled;
 static bool bold_enabled;
 static bool erase_enabled;
+static bool gamma_correct_enabled;
 
 void DG_AtExit(void)
 {
@@ -188,7 +216,8 @@ void DG_Init(void)
 	const HANDLE hInputHandle = GetStdHandle(STD_INPUT_HANDLE);
 	WINDOWS_CALL(hInputHandle == INVALID_HANDLE_VALUE, "DG_Init: %s");
 	WINDOWS_CALL(!GetConsoleMode(hInputHandle, &mode), "DG_Init: %s");
-	mode &= ~(ENABLE_MOUSE_INPUT | ENABLE_WINDOW_INPUT | ENABLE_QUICK_EDIT_MODE | ENABLE_ECHO_INPUT);
+	mode &= ~(ENABLE_MOUSE_INPUT | ENABLE_WINDOW_INPUT | ENABLE_QUICK_EDIT_MODE
+		| ENABLE_ECHO_INPUT);
 	WINDOWS_CALL(!SetConsoleMode(hInputHandle, mode), "DG_Init: %s");
 #else
 	struct termios t;
@@ -202,13 +231,26 @@ void DG_Init(void)
 	gradient_enabled = M_CheckParm("-nograd") == 0;
 	bold_enabled = M_CheckParm("-nobold") == 0;
 	erase_enabled = M_CheckParm("-erase") > 0;
-	unicode_enabled = M_CheckParm("-unicode") > 0;
+	gamma_correct_enabled = M_CheckParm("-fixgamma") > 0;
 
-	if (unicode_enabled && !setlocale(LC_ALL, "en_US.UTF-8"))
+	int i = M_CheckParmWithArgs("-chars", 1);
+	if (i > 0) {
+		if (!strcmp("ascii", myargv[i + 1])) {
+			character_set = ASCII;
+		} else if (!strcmp("block", myargv[i + 1])) {
+			character_set = BLOCK;
+		} else if (!strcmp("braille", myargv[i + 1])) {
+			character_set = BRAILLE;
+		} else {
+			I_Error("Unrecognized argument for -chars: '%s'", myargv[i + 1]);
+		}
+	}
+
+	if (character_set != ASCII && !setlocale(LC_ALL, "en_US.UTF-8"))
 		I_Error("DG_Init: setlocale error");
 
 	/* Longest per-pixel SGR code: \033[38;2;RRR;GGG;BBBm (length 19)
-	 * 3 Chars per pixel (unicode)
+	 * 2 Chars per pixel
 	 * 1 Newline character per line
 	 * 1 NUL terminator
 	 * SGR move cursor code: \033[;H (length 4)
@@ -216,7 +258,10 @@ void DG_Init(void)
 	 * SGR bold code: \033[1m (length 4)
 	 * SGR erase code: \033[2J (length 4)
 	 */
-	output_buffer_size = ((color_enabled ? 19U : 0U) + (unicode_enabled ? 6U : 2U)) * DOOMGENERIC_RESX * DOOMGENERIC_RESY + DOOMGENERIC_RESY + 1U + 4U + (bold_enabled ? 4U : 0U) + (erase_enabled ? 4U : 0U) + ((color_enabled || bold_enabled) ? 4U : 0U);
+	output_buffer_size = ((color_enabled ? 19U : 0U) + (character_set == ASCII ? 2U : 6U))
+			* DOOMGENERIC_RESX * DOOMGENERIC_RESY
+		+ DOOMGENERIC_RESY + 1U + 4U + (bold_enabled ? 4U : 0U) + (erase_enabled ? 4U : 0U)
+		+ ((color_enabled || bold_enabled) ? 4U : 0U);
 	output_buffer = malloc(output_buffer_size);
 
 	CALL(clock_gettime(CLK, &ts_init), "DG_Init: clock_gettime error %d");
@@ -246,6 +291,12 @@ void DG_DrawFrame(void)
 		BUF_PUTS(buf, "\033[1m");
 	for (row = 0; row < DOOMGENERIC_RESY; row++) {
 		for (col = 0; col < DOOMGENERIC_RESX; col++) {
+			if (gamma_correct_enabled) {
+				pixel->r = byte_sqrt[pixel->r];
+				pixel->g = byte_sqrt[pixel->g];
+				pixel->b = byte_sqrt[pixel->b];
+			}
+
 			if (color_enabled && (color ^ *(uint32_t *)pixel) & 0x00FFFFFF) {
 				BUF_PUTS(buf, "\033[38;2;");
 				BUF_ITOA(buf, pixel->r);
@@ -257,11 +308,24 @@ void DG_DrawFrame(void)
 				color = *(uint32_t *)pixel;
 			}
 
-			if (unicode_enabled) {
+			switch (character_set) {
+			case ASCII:
 				if (gradient_enabled) {
-					const size_t idx = (pixel->r + pixel->g + pixel->b) * (UNICODE_GRAD_LEN + 1U) / RGB_SUM_MAX;
+					const char v_char = grad[(pixel->r + pixel->g + pixel->b)
+						* GRAD_LEN / RGB_SUM_MAX];
+					BUF_PUTCHAR(buf, v_char);
+					BUF_PUTCHAR(buf, v_char);
+				} else {
+					BUF_PUTS(buf, "##");
+				}
+				break;
+			case BLOCK:
+				if (gradient_enabled) {
+					const size_t idx = (pixel->r + pixel->g + pixel->b)
+						* (UNICODE_GRAD_LEN + 1U) / RGB_SUM_MAX;
 					if (idx) {
-						const void *const v_char = &unicode_grad[(idx - 1) * 3];
+						const void *const v_char =
+							&unicode_grad[(idx - 1) * 3];
 						BUF_MEMCPY(buf, v_char, 3);
 						BUF_MEMCPY(buf, v_char, 3);
 					} else {
@@ -270,14 +334,24 @@ void DG_DrawFrame(void)
 				} else {
 					BUF_PUTS(buf, "\u2588\u2588");
 				}
-			} else {
+				break;
+			case BRAILLE:
 				if (gradient_enabled) {
-					const char v_char = grad[(pixel->r + pixel->g + pixel->b) * GRAD_LEN / RGB_SUM_MAX];
-					BUF_PUTCHAR(buf, v_char);
-					BUF_PUTCHAR(buf, v_char);
+					const size_t idx =
+						(pixel->r + pixel->g + pixel->b) * 8 / RGB_SUM_MAX;
+					if (idx) {
+						const char *const gradient = braille_grads[idx - 1];
+						const size_t len =
+							braille_grad_lengths[idx - 1] / 3;
+						BUF_MEMCPY(buf, &gradient[(random() % len) * 3], 3);
+						BUF_MEMCPY(buf, &gradient[(random() % len) * 3], 3);
+					} else {
+						BUF_PUTS(buf, "  ");
+					}
 				} else {
-					BUF_PUTS(buf, "##");
+					BUF_PUTS(buf, "\u28ff\u28ff");
 				}
+				break;
 			}
 
 			pixel++;
@@ -540,12 +614,16 @@ void DG_ReadInput(void)
 	unsigned input_count = 0;
 	if (event_cnt) {
 		INPUT_RECORD input_records[32];
-		WINDOWS_CALL(!ReadConsoleInput(hInputHandle, input_records, 32, &event_cnt), "DG_ReadInput: %s");
+		WINDOWS_CALL(!ReadConsoleInput(hInputHandle, input_records, 32, &event_cnt),
+			"DG_ReadInput: %s");
 
 		DWORD i;
 		for (i = 0; i < event_cnt; i++) {
-			if (input_records[i].Event.KeyEvent.bKeyDown && input_records[i].EventType == KEY_EVENT) {
-				unsigned char inp = convertToDoomKey(input_records[i].Event.KeyEvent.wVirtualKeyCode, input_records[i].Event.KeyEvent.uChar.AsciiChar);
+			if (input_records[i].Event.KeyEvent.bKeyDown
+				&& input_records[i].EventType == KEY_EVENT) {
+				unsigned char inp = convertToDoomKey(
+					input_records[i].Event.KeyEvent.wVirtualKeyCode,
+					input_records[i].Event.KeyEvent.uChar.AsciiChar);
 				if (inp) {
 					input_buffer[input_count++] = inp;
 					if (input_count == INPUT_BUFFER_LEN - 1u)
