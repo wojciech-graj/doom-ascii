@@ -17,18 +17,28 @@ telnet doom.w-graj.net 666
 Binaries for Windows and Linux are provided as [github releases](https://github.com/wojciech-graj/doom-ascii/releases).
 
 ### Linux / Mac
-Requires Make and a C compiler. Creates ```doom_ascii/doom_ascii```
+Requires Make and a C compiler. Creates `doom_ascii/doom_ascii`
 ```
 cd src
 make
 ```
 
 ### Windows
-Compile on linux. Creates ```doom_ascii/doom_ascii.exe```
+Compile on linux. Creates `doom_ascii/doom_ascii.exe`
 ```
 cd src
 make windows-cross
 ```
+
+## Settings
+
+The following command-line arguments can be supplied:
+- `-nocolor`: Disable color.
+- `-nograd`: Disable text gradients, exclusively use # or █.
+- `-nobold`: Disable bold text.
+- `-unicode`: Use [unicode block elements](https://en.wikipedia.org/wiki/Block_Elements) instead of ASCII characters.
+- `-erase`: Erase previous frame instead of overwriting. May cause a strobe effect.
+- `-scaling <n>`: Set resolution. Smaller numbers denote a larger display. A scale of 4 is used by default, and should work flawlessly on all terminals. Most terminals (excluding Windows CMD) should manage with scales up to and including 2.
 
 ## Controls
 Default keybindings are listed below.
@@ -46,15 +56,13 @@ Default keybindings are listed below.
 |SPEED			|]				|
 |WEAPON SELECT  |1-7            |
 
-Keybinds can be remapped in ```.default.cfg```, which should be placed in the same directory as the game executable.
+Keybinds can be remapped in `.default.cfg`, which should be placed in the same directory as the game executable.
 
 ## Performance tips
 ### Display
 Most terminals aren't designed for massive throughput, so the game cannot be played at full 320x200 resolution at high frames per second.
 
-Pass the command-line argument ```-scaling n``` to determine the level of scaling. Smaller numbers denote a larger display.
-
-A scale of 4 is used by default, and should work flawlessly on all terminals. Most terminals (excluding Windows CMD) should manage with scales up to and including 2.
+Pass the command-line argument `-scaling` to determine the level of scaling (See [Settings](#settings)).
 
 ### Input
 For a better playing experience, increase the keyboard repeat rate, and reduce the keyboard repeat delay.

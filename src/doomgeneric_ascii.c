@@ -1,5 +1,5 @@
 //
-// Copyright(C) 2022-2024 Wojciech Graj
+// Copyright(C) 2022-2025 Wojciech Graj
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -18,9 +18,11 @@
 #include "doomgeneric.h"
 #include "doomkeys.h"
 #include "i_system.h"
+#include "m_argv.h"
 
 #include <ctype.h>
 #include <errno.h>
+#include <locale.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,7 +33,6 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #else
-#include <sys/ioctl.h>
 #include <termios.h>
 #include <time.h>
 #include <unistd.h>
@@ -66,7 +67,8 @@ struct timespec {
 	long tv_sec;
 	long tv_nsec;
 };
-int clock_gettime(const int p, struct timespec *const spec)
+
+static int clock_gettime(const int p, struct timespec *const spec)
 {
 	(void)p;
 	__int64 wintime;
@@ -94,18 +96,40 @@ int clock_gettime(const int p, struct timespec *const spec)
 	} while (0)
 #define CALL_STDOUT(stmt, format) CALL((stmt) == EOF, format)
 
-#define BYTE_TO_TEXT(buf, byte)                      \
+#define BUF_ITOA(buf, byte)                          \
 	do {                                         \
 		*(buf)++ = '0' + (byte) / 100u;      \
 		*(buf)++ = '0' + (byte) / 10u % 10u; \
 		*(buf)++ = '0' + (byte) % 10u;       \
 	} while (0)
 
-#define GRAD_LEN 70u
-#define INPUT_BUFFER_LEN 16u
-#define EVENT_BUFFER_LEN ((INPUT_BUFFER_LEN)*2u - 1u)
+#define BUF_MEMCPY(buf, s, len)      \
+	do {                         \
+		memcpy(buf, s, len); \
+		(buf) += (len);      \
+	} while (0)
+
+#define BUF_PUTS(buf, s)                           \
+	do {                                       \
+		BUF_MEMCPY(buf, s, sizeof(s) - 1); \
+	} while (0)
+
+#define BUF_PUTCHAR(buf, c)   \
+	do {                  \
+		*(buf)++ = c; \
+	} while (0)
+
+#define GRAD_LEN (sizeof(grad) - 1)
+#define EVENT_BUFFER_LEN (INPUT_BUFFER_LEN * 2u - 1u)
+
+enum {
+	UNICODE_GRAD_LEN = 4U,
+	INPUT_BUFFER_LEN = 16U,
+	RGB_SUM_MAX = 776U,
+};
 
 static const char grad[] = " .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
+static const char unicode_grad[] = "\u2591\u2592\u2593\u2588";
 
 struct color_t {
 	uint32_t b : 8;
@@ -122,8 +146,17 @@ static unsigned char input_buffer[INPUT_BUFFER_LEN];
 static uint16_t event_buffer[EVENT_BUFFER_LEN];
 static uint16_t *event_buf_loc;
 
+static bool color_enabled;
+static bool unicode_enabled;
+static bool gradient_enabled;
+static bool bold_enabled;
+static bool erase_enabled;
+
 void DG_AtExit(void)
 {
+	if (color_enabled || bold_enabled)
+		(void)fputs("\033[0m", stdout);
+
 #ifdef OS_WINDOWS
 	DWORD mode;
 	const HANDLE hInputHandle = GetStdHandle(STD_INPUT_HANDLE);
@@ -142,7 +175,7 @@ void DG_AtExit(void)
 #endif
 }
 
-void DG_Init()
+void DG_Init(void)
 {
 #ifdef OS_WINDOWS
 	const HANDLE hOutputHandle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -165,20 +198,33 @@ void DG_Init()
 #endif
 	CALL(atexit(&DG_AtExit), "DG_Init: atexit error %d");
 
-	/* Longest SGR code: \033[38;2;RRR;GGG;BBBm (length 19)
-	 * Maximum 21 bytes per pixel: SGR + 2 x char
+	color_enabled = M_CheckParm("-nocolor") == 0;
+	gradient_enabled = M_CheckParm("-nograd") == 0;
+	bold_enabled = M_CheckParm("-nobold") == 0;
+	erase_enabled = M_CheckParm("-erase") > 0;
+	unicode_enabled = M_CheckParm("-unicode") > 0;
+
+	if (unicode_enabled && !setlocale(LC_ALL, "en_US.UTF-8"))
+		I_Error("DG_Init: setlocale error");
+
+	/* Longest per-pixel SGR code: \033[38;2;RRR;GGG;BBBm (length 19)
+	 * 3 Chars per pixel (unicode)
 	 * 1 Newline character per line
+	 * 1 NUL terminator
+	 * SGR move cursor code: \033[;H (length 4)
 	 * SGR clear code: \033[0m (length 4)
+	 * SGR bold code: \033[1m (length 4)
+	 * SGR erase code: \033[2J (length 4)
 	 */
-	output_buffer_size = 21u * DOOMGENERIC_RESX * DOOMGENERIC_RESY + DOOMGENERIC_RESY + 4u;
+	output_buffer_size = ((color_enabled ? 19U : 0U) + (unicode_enabled ? 6U : 2U)) * DOOMGENERIC_RESX * DOOMGENERIC_RESY + DOOMGENERIC_RESY + 1U + 4U + (bold_enabled ? 4U : 0U) + (erase_enabled ? 4U : 0U) + ((color_enabled || bold_enabled) ? 4U : 0U);
 	output_buffer = malloc(output_buffer_size);
 
-	clock_gettime(CLK, &ts_init);
+	CALL(clock_gettime(CLK, &ts_init), "DG_Init: clock_gettime error %d");
 
 	memset(input_buffer, '\0', INPUT_BUFFER_LEN);
 }
 
-void DG_DrawFrame()
+void DG_DrawFrame(void)
 {
 	/* Clear screen if first frame */
 	static bool first_frame = true;
@@ -187,50 +233,62 @@ void DG_DrawFrame()
 		CALL_STDOUT(fputs("\033[1;1H\033[2J", stdout), "DG_DrawFrame: fputs error %d");
 	}
 
-	/* fill output buffer */
-	uint32_t color = 0xFFFFFF00;
+	uint32_t color = 0x00FFFFFF;
 	unsigned row, col;
 	struct color_t *pixel = (struct color_t *)DG_ScreenBuffer;
 	char *buf = output_buffer;
 
+	/* fill output buffer */
+	BUF_PUTS(buf, "\033[;H"); /* move cursor to top left corner */
+	if (erase_enabled)
+		BUF_PUTS(buf, "\033[2J");
+	if (bold_enabled)
+		BUF_PUTS(buf, "\033[1m");
 	for (row = 0; row < DOOMGENERIC_RESY; row++) {
 		for (col = 0; col < DOOMGENERIC_RESX; col++) {
-			if ((color ^ *(uint32_t *)pixel) & 0x00FFFFFF) {
-				*buf++ = '\033';
-				*buf++ = '[';
-				*buf++ = '3';
-				*buf++ = '8';
-				*buf++ = ';';
-				*buf++ = '2';
-				*buf++ = ';';
-				BYTE_TO_TEXT(buf, pixel->r);
-				*buf++ = ';';
-				BYTE_TO_TEXT(buf, pixel->g);
-				*buf++ = ';';
-				BYTE_TO_TEXT(buf, pixel->b);
-				*buf++ = 'm';
+			if (color_enabled && (color ^ *(uint32_t *)pixel) & 0x00FFFFFF) {
+				BUF_PUTS(buf, "\033[38;2;");
+				BUF_ITOA(buf, pixel->r);
+				BUF_PUTCHAR(buf, ';');
+				BUF_ITOA(buf, pixel->g);
+				BUF_PUTCHAR(buf, ';');
+				BUF_ITOA(buf, pixel->b);
+				BUF_PUTCHAR(buf, 'm');
 				color = *(uint32_t *)pixel;
 			}
-			char v_char = grad[(pixel->r + pixel->g + pixel->b) * GRAD_LEN / 766u];
-			*buf++ = v_char;
-			*buf++ = v_char;
+
+			if (unicode_enabled) {
+				if (gradient_enabled) {
+					const size_t idx = (pixel->r + pixel->g + pixel->b) * (UNICODE_GRAD_LEN + 1U) / RGB_SUM_MAX;
+					if (idx) {
+						const void *const v_char = &unicode_grad[(idx - 1) * 3];
+						BUF_MEMCPY(buf, v_char, 3);
+						BUF_MEMCPY(buf, v_char, 3);
+					} else {
+						BUF_PUTS(buf, "  ");
+					}
+				} else {
+					BUF_PUTS(buf, "\u2588\u2588");
+				}
+			} else {
+				if (gradient_enabled) {
+					const char v_char = grad[(pixel->r + pixel->g + pixel->b) * GRAD_LEN / RGB_SUM_MAX];
+					BUF_PUTCHAR(buf, v_char);
+					BUF_PUTCHAR(buf, v_char);
+				} else {
+					BUF_PUTS(buf, "##");
+				}
+			}
+
 			pixel++;
 		}
-		*buf++ = '\n';
+		BUF_PUTCHAR(buf, '\n');
 	}
-	*buf++ = '\033';
-	*buf++ = '[';
-	*buf++ = '0';
-	*buf = 'm';
+	if (color_enabled || bold_enabled)
+		BUF_PUTS(buf, "\033[0m");
+	BUF_PUTCHAR(buf, '\0');
 
-	/* move cursor to top left corner and set bold text*/
-	CALL_STDOUT(fputs("\033[;H\033[1m", stdout), "DG_DrawFrame: fputs error %d");
-
-	/* flush output buffer */
 	CALL_STDOUT(fputs(output_buffer, stdout), "DG_DrawFrame: fputs error %d");
-
-	/* clear output buffer */
-	memset(output_buffer, '\0', buf - output_buffer + 1u);
 }
 
 void DG_SleepMs(const uint32_t ms)
@@ -240,16 +298,16 @@ void DG_SleepMs(const uint32_t ms)
 #else
 	const struct timespec ts = (struct timespec){
 		.tv_sec = ms / 1000,
-		.tv_nsec = (ms % 1000ul) * 1000000,
+		.tv_nsec = (ms % 1000) * 1000000L,
 	};
 	nanosleep(&ts, NULL);
 #endif
 }
 
-uint32_t DG_GetTicksMs()
+uint32_t DG_GetTicksMs(void)
 {
 	struct timespec ts;
-	clock_gettime(CLK, &ts);
+	CALL(clock_gettime(CLK, &ts), "DG_GetTickMs: clock_gettime error: %d");
 
 	return (ts.tv_sec - ts_init.tv_sec) * 1000 + (ts.tv_nsec - ts_init.tv_nsec) / 1000000;
 }
@@ -462,7 +520,7 @@ void DG_ReadInput(void)
 
 	memcpy(prev_input_buffer, input_buffer, INPUT_BUFFER_LEN);
 	memset(input_buffer, '\0', INPUT_BUFFER_LEN);
-	memset(event_buffer, '\0', 2u * (size_t)EVENT_BUFFER_LEN);
+	memset(event_buffer, '\0', 2U * (size_t)EVENT_BUFFER_LEN);
 	event_buf_loc = event_buffer;
 #ifdef OS_WINDOWS
 	const HANDLE hInputHandle = GetStdHandle(STD_INPUT_HANDLE);
@@ -512,7 +570,7 @@ void DG_ReadInput(void)
 	newt.c_cc[VTIME] = 0;
 	CALL(tcsetattr(STDIN_FILENO, TCSANOW, &newt), "DG_DrawFrame: tcsetattr error %d");
 
-	CALL(read(2, raw_input_buffer, INPUT_BUFFER_LEN - 1u) < 0, "DG_DrawFrame: read error %d");
+	CALL(read(2, raw_input_buffer, INPUT_BUFFER_LEN - 1U) < 0, "DG_DrawFrame: read error %d");
 
 	CALL(tcsetattr(STDIN_FILENO, TCSANOW, &oldt), "DG_DrawFrame: tcsetattr error %d");
 

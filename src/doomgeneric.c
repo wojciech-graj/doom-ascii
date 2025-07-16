@@ -1,5 +1,5 @@
 //
-// Copyright(C) 2022 Wojciech Graj
+// Copyright(C) 2022-2025 Wojciech Graj
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,26 +16,28 @@
 //
 
 #include "doomgeneric.h"
-#include "m_argv.h"
+
 #include "i_video.h"
+#include "m_argv.h"
+
+#include <stdlib.h>
 
 unsigned DOOMGENERIC_RESX = 80;
 unsigned DOOMGENERIC_RESY = 50;
 
-uint32_t* DG_ScreenBuffer = 0;
-
+uint32_t *DG_ScreenBuffer = 0;
 
 void dg_Create()
 {
 	int i;
 	i = M_CheckParmWithArgs("-scaling", 1);
-    if (i > 0) {
+	if (i > 0) {
 		i = atoi(myargv[i + 1]);
 		DOOMGENERIC_RESX = SCREENWIDTH / i;
 		DOOMGENERIC_RESY = SCREENHEIGHT / i;
 	}
 
-	DG_ScreenBuffer = malloc(DOOMGENERIC_RESX * DOOMGENERIC_RESY * 4);
+	DG_ScreenBuffer = malloc((unsigned long)DOOMGENERIC_RESX * DOOMGENERIC_RESY * 4);
 
 	DG_Init();
 }
