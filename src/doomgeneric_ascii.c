@@ -264,8 +264,14 @@ void DG_Init(void)
 	if (i > 0)
 		keypress_smoothing_ms = atoi(myargv[i + 1]);
 
-	if (character_set != ASCII && !setlocale(LC_ALL, "en_US.UTF-8"))
-		I_Error("DG_Init: setlocale error");
+	if (character_set != ASCII) {
+#ifdef OS_WINDOWS
+		WINDOWS_CALL(!SetConsoleOutputCP(CP_UTF8), "DG_Init: %s");
+#else
+		if (!setlocale(LC_ALL, "en_US.UTF-8"))
+			I_Error("DG_Init: setlocale error");
+#endif
+	}
 
 	/* Longest per-pixel SGR code: \033[38;2;RRR;GGG;BBBm (length 19)
 	 * 2 Chars per pixel
