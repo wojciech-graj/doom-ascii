@@ -1,15 +1,51 @@
 name: CI
 
-on:
-  push:
-  pull_request:
+on: [push, pull_request]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+
+  compile_native:
+    name: Compile (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
       - name: Compile
+        run: make -j$(nproc)
+
+  compile_win:
+    name: Compile (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - target: win32
+            apt_pkg: gcc-mingw-w64-i686-win32
+            make_args: PLATFORM=win32
+          - target: win64
+            apt_pkg: gcc-mingw-w64-x86-64-win32
+            make_args: PLATFORM=win64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
         run: |
-          cd src
-          make -j$(nproc)
+          sudo apt update
+          sudo apt install -y ${{ matrix.apt_pkg }}
+      - name: Compile
+        run: make ${{ matrix.make_args }} -j$(nproc)
+
+  compile_appimage:
+    name: Compile (musl, AppImage)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y musl-tools
+          wget https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O /usr/local/bin/appimagetool
+          chmod +x /usr/local/bin/appimagetool
+      - name: Compile
+        run: make PLATFORM=musl NSIGN=1 -j$(nproc) appimage

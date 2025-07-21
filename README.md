@@ -13,19 +13,19 @@ You will need a WAD file (game data). If you don't own the game, the shareware v
 telnet doom.w-graj.net 666
 ```
 
-## Build
+## Usage
 Binaries for Windows and Linux are provided as [github releases](https://github.com/wojciech-graj/doom-ascii/releases).
 
-### Linux / Mac
+### Build from Source
+#### Linux / MacOS
 Requires Make and a C compiler. Creates `_<YOUR OS>/game/doom_ascii`
 ```sh
 make
 ```
 
-### Windows
-Compile on linux. Creates `_<win32|win64>/game/doom_ascii.exe`
+### Other
 ```sh
-make PLATFORM=<win32|win64>
+make PLATFORM=<|unix|musl|win32|win64> <|zip|appimage|appimage-zip|appimage-release|release|clean|clean-all>
 ```
 
 ## Settings

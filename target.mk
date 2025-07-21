@@ -1,7 +1,7 @@
 [].SUFFIXES:
 
 ifndef PLATFORM
-PLATFORM := linux
+PLATFORM := unix
 export PLATFORM
 endif
 

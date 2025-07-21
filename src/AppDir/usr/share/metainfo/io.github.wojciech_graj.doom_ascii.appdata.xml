@@ -10,7 +10,9 @@
 
   <description>
     <p>
-      Text-based DOOM in your terminal!
+      Text-based DOOM in your terminal! A Source-port of doomgeneric. Does not have sound.
+
+      You will need a WAD file (game data). If you don't own the game, the shareware version is freely available.
     </p>
   </description>
 
@@ -30,8 +32,8 @@
 
   <screenshots>
     <screenshot type="default">
-      <image>https://github.com/wojciech-graj/doom-ascii/blob/master/screenshots/logo.png</image>
-      <caption>The title screen</caption>
+      <image>https://w-graj.net/images/doom-ascii/logo.png</image>
+      <caption>The DOOM title screen</caption>
     </screenshot>
   </screenshots>
 

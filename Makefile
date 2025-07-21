@@ -2,18 +2,20 @@ ifeq ($(MAKECMDGOALS),release)
 
 .PHONY: release
 release:
-	$(MAKE) PLATFORM=musl appimage-zip
 	$(MAKE) PLATFORM=musl zip
+	$(MAKE) PLATFORM=musl appimage-zip
+	$(MAKE) PLATFORM=musl appimage-release
 	$(MAKE) PLATFORM=win32 zip
 	$(MAKE) PLATFORM=win64 zip
 	mkdir -p release
-	cp -t release _musl/*.zip _win32/*.zip _win64/*.zip
+	cp -t release _musl/*.zip _win32/*.zip _win64/*.zip _musl/*.AppImage
 
 else ifeq ($(MAKECMDGOALS),clean-all)
 
 .PHONY: clean-all
 clean-all:
-	$(MAKE) PLATFORM=linux clean
+	rm -rf release
+	$(MAKE) clean
 	$(MAKE) PLATFORM=musl clean
 	$(MAKE) PLATFORM=win32 clean
 	$(MAKE) PLATFORM=win64 clean
@@ -43,10 +45,14 @@ TARGET = doom-ascii
 CFLAGS += -DNORMALUNIX -DLINUX
 endif
 
-OS = $(shell $(CC) -dumpmachine | cut -d'-' -f1-2)
+TARGET_TRIPLE = $(subst -, ,$(shell $(CC) -dumpmachine))
+ARCH = $(firstword $(TARGET_TRIPLE))
+OS = $(word 2,$(TARGET_TRIPLE))
+
 TARGETAPP = doom-ascii.AppImage
-TARGETZIP = doom-ascii_$(OS)_$(VERSION).zip
-TARGETAPPZIP = doom-ascii_$(OS)_AppImage_$(VERSION).zip
+TARGETAPPREL = doom-ascii-$(VERSION)-$(ARCH).AppImage
+TARGETZIP = doom-ascii-$(VERSION)-$(ARCH)-$(OS).zip
+TARGETAPPZIP = $(TARGETAPPREL).zip
 
 OBJDIR = obj
 APPDIR = $(OBJDIR)/io.github.wojciech_graj.doom_ascii.AppDir
@@ -56,7 +62,10 @@ APPOUTDIR = appimage
 CFLAGS += -O3 -flto -Wall -D_DEFAULT_SOURCE -DVERSION=$(VERSION) -std=c99 #-DSNDSERV -DUSEASM
 LDFLAGS += -flto
 LIBS += -lm
+
+ifndef NSIGN
 APPFLAGS += --sign
+endif
 
 SRC = i_main.c dummy.c am_map.c doomdef.c doomstat.c dstrings.c d_event.c d_items.c d_iwad.c \
 	d_loop.c d_main.c d_mode.c d_net.c f_finale.c f_wipe.c g_game.c hu_lib.c hu_stuff.c info.c \
@@ -77,6 +86,9 @@ all: $(OUTDIR)/$(TARGET) $(OUTDIR)/.default.cfg
 
 .PHONY: appimage
 appimage: $(APPOUTDIR)/$(TARGETAPP) $(APPOUTDIR)/.default.cfg
+
+.PHONY: appimage-release
+appimage-release: $(TARGETAPPREL)
 
 .PHONY: zip
 zip: $(TARGETZIP)
@@ -99,6 +111,9 @@ $(OBJDIR)/$(TARGET): $(OBJS)
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $< -o $@
+
+$(TARGETAPPREL): $(OBJDIR)/$(TARGETAPP)
+	cp $< $@
 
 define copy_rule
 $1/%: $2/%
