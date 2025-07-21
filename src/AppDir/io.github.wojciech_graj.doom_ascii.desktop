@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=DOOM-ASCII
+Exec=doom-ascii
+Icon=io.github.wojciech_graj.doom_ascii
+Type=Application
+Terminal=true
+Categories=Game;

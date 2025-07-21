@@ -1,4 +1,7 @@
-build/
-.savegame/
-doom_ascii/
 *.WAD
+.cache/
+_*/
+build/
+compile_commands.json
+doom_ascii/
+release/

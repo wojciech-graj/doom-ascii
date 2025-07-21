@@ -9,7 +9,7 @@ Source-port of [doomgeneric](https://github.com/ozkl/doomgeneric). Does not have
 You will need a WAD file (game data). If you don't own the game, the shareware version is freely available.
 
 **Try it out over telnet!**
-```
+```sh
 telnet doom.w-graj.net 666
 ```
 
@@ -17,21 +17,18 @@ telnet doom.w-graj.net 666
 Binaries for Windows and Linux are provided as [github releases](https://github.com/wojciech-graj/doom-ascii/releases).
 
 ### Linux / Mac
-Requires Make and a C compiler. Creates `doom_ascii/doom_ascii`
-```
-cd src
+Requires Make and a C compiler. Creates `_<YOUR OS>/game/doom_ascii`
+```sh
 make
 ```
 
 ### Windows
-Compile on linux. Creates `doom_ascii/doom_ascii.exe`
-```
-cd src
-make windows-cross
+Compile on linux. Creates `_<win32|win64>/game/doom_ascii.exe`
+```sh
+make PLATFORM=<win32|win64>
 ```
 
 ## Settings
-
 The following command-line arguments can be supplied:
 - `-nocolor`: Disable color.
 - `-nograd`: Disable text gradients, exclusively use fully filled-in pixels.

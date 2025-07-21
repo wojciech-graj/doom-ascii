@@ -1,5 +1,8 @@
 /* config.hin.  Generated from configure.ac by autoheader.  */
 
+#define config_h_str(token) #token
+#define config_h_xstr(token) config_h_str(token)
+
 /* Define to 1 if you have the <dev/isa/spkrio.h> header file. */
 #undef HAVE_DEV_ISA_SPKRIO_H
 
@@ -64,19 +67,19 @@
 #undef HAVE_UNISTD_H
 
 /* Name of package */
-#define PACKAGE "Doom"
+#define PACKAGE "DOOM"
 
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
 
 /* Define to the full name of this package. */
-#define PACKAGE_NAME "Doom ASCII"
+#define PACKAGE_NAME "DOOM ASCII"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "Doom ASCII 0.3.0"
+#define PACKAGE_STRING ("DOOM ASCII " config_h_xstr(VERSION))
 
 /* Define to the one symbol short name of this package. */
-#define PACKAGE_TARNAME "doom_ascii.tar"
+#define PACKAGE_TARNAME "doom-ascii.tar"
 
 /* Define to the home page for this package. */
 #define PACKAGE_URL ""
@@ -85,13 +88,10 @@
 #define PACKAGE_VERSION 0.1
 
 /* Change this when you create your awesome forked version */
-#define PROGRAM_PREFIX "doom_ascii"
+#define PROGRAM_PREFIX "doom-ascii"
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
-
-/* Version number of package */
-#define VERSION 0.3.0
 
 /* Define to 1 if you want to compile the unmodified code */
 #undef ORIGCODE
