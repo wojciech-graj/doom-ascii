@@ -198,6 +198,7 @@ void DG_AtExit(void)
 {
 	if (color_enabled || bold_enabled)
 		(void)fputs("\033[0m", stdout);
+	(void)fputs("\n", stdout);
 
 #ifdef OS_WINDOWS
 	DWORD mode;
@@ -389,7 +390,8 @@ void DG_DrawFrame(void)
 
 			pixel++;
 		}
-		BUF_PUTCHAR(buf, '\n');
+		if (row + 1 < DOOMGENERIC_RESY)
+			BUF_PUTCHAR(buf, '\n');
 	}
 	if (color_enabled || bold_enabled)
 		BUF_PUTS(buf, "\033[0m");
