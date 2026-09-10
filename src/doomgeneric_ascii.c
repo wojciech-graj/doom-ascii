@@ -198,7 +198,7 @@ void DG_AtExit(void)
 {
 	if (color_enabled || bold_enabled)
 		(void)fputs("\033[0m", stdout);
-	(void)fputs("\n", stdout);
+	(void)fputs("\033[?25h\n", stdout);
 
 #ifdef OS_WINDOWS
 	DWORD mode;
@@ -241,6 +241,8 @@ void DG_Init(void)
 	CALL(tcsetattr(STDIN_FILENO, TCSANOW, &t), "DG_Init: tcsetattr error %d");
 #endif
 	CALL(atexit(&DG_AtExit), "DG_Init: atexit error %d");
+
+	CALL_STDOUT(fputs("\033[?25l", stdout), "DG_Init: fputs error %d");
 
 	color_enabled = M_CheckParm("-nocolor") == 0;
 	gradient_enabled = M_CheckParm("-nograd") == 0;
