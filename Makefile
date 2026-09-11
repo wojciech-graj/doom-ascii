@@ -28,7 +28,7 @@ else
 
 VPATH = $(SRCDIR)
 
-VERSION = 0.3.1
+VERSION = 0.3.2
 
 ifeq ($(PLATFORM),win32)
 TARGET = doom-ascii.exe
