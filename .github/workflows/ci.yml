@@ -11,7 +11,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Compile
         run: make -j$(nproc)
 
@@ -28,7 +28,7 @@ jobs:
             apt_pkg: gcc-mingw-w64-x86-64-win32
             make_args: PLATFORM=win64
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install dependencies
         run: |
           sudo apt update
@@ -40,7 +40,7 @@ jobs:
     name: Compile (musl, AppImage)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install dependencies
         run: |
           sudo apt update
