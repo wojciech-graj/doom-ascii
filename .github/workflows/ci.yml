@@ -49,3 +49,18 @@ jobs:
           chmod +x /usr/local/bin/appimagetool
       - name: Compile
         run: make PLATFORM=musl NSIGN=1 -j$(nproc) appimage
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: |
+          sudo apt update
+          sudo apt install -y bear
+      - name: Generate compile_commands.json
+        run: bear -- make -j$(nproc)
+      - name: Tidy
+        run: clang-tidy --warnings-as-errors='*' src/doomgeneric.c src/doomgeneric_ascii.c
+      - name: Format
+        run: clang-format --dry-run -Werror src/doomgeneric.c src/doomgeneric.h src/doomgeneric_ascii.c
