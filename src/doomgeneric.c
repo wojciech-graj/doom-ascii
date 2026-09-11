@@ -20,6 +20,7 @@
 #include "i_video.h"
 #include "m_argv.h"
 
+#include <stdint.h>
 #include <stdlib.h>
 
 unsigned DOOMGENERIC_RESX = 80;

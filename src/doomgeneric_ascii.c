@@ -23,6 +23,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <locale.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -77,7 +78,7 @@ static int clock_gettime(const int p, struct timespec *const spec)
 }
 
 #else
-#define CLK CLOCK_REALTIME
+#define CLK CLOCK_REALTIME /* NOLINT(misc-include-cleaner) */
 #define dg_random random
 #endif
 
