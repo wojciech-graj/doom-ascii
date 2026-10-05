@@ -44,10 +44,15 @@
 
 #else
 	
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#define SHORT(x)  ((signed short) __builtin_bswap16((unsigned short)(x)))
+#define LONG(x)   ((signed int) __builtin_bswap32((unsigned int)(x)))
+#define SYS_BIG_ENDIAN
+#else
 #define SHORT(x)  ((signed short) (x))
 #define LONG(x)   ((signed int) (x))
-
 #define SYS_LITTLE_ENDIAN
+#endif
 
 #endif
 #endif
